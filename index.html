@@ -69,6 +69,10 @@
         
         .drop-zone { border: 2px dashed #cbd5e1; transition: all 0.2s; }
         .drop-zone.active { border-color: #4f46e5; background-color: #f5f3ff; }
+
+        #uiMessage {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
 <body class="min-h-screen text-slate-800 pb-10">
@@ -101,13 +105,13 @@
                     <i data-lucide="download" class="w-3.5 h-3.5"></i>CSV出力
                 </button>
                 <div class="w-px h-5 bg-slate-200 mx-1"></div>
-                <button onclick="clearCloudData()" class="text-slate-400 hover:text-rose-600 p-1.5 transition-colors" title="クラウドデータを空にする"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                <button onclick="clearCloudData()" class="text-slate-400 hover:text-rose-600 p-1.5 transition-colors" title="クラウドデータを全削除"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </div>
         </div>
     </header>
 
     <!-- UI Feedback Message -->
-    <div id="uiMessage" class="hidden fixed top-16 left-1/2 -translate-x-1/2 z-[200] px-6 py-3 rounded-full shadow-2xl text-sm font-bold flex items-center gap-2 transition-all"></div>
+    <div id="uiMessage" class="hidden fixed top-20 left-1/2 -translate-x-1/2 z-[200] px-8 py-4 rounded-2xl text-sm font-bold flex items-center gap-3 transition-all"></div>
 
     <main class="p-4 space-y-4">
         <!-- KPI & Charts -->
@@ -190,7 +194,7 @@
     <!-- Footer -->
     <footer class="fixed bottom-0 left-0 w-full bg-slate-900 text-white py-1 px-4 flex justify-between items-center z-[140]">
         <div class="text-[8px] font-bold uppercase tracking-widest text-slate-500">Amakusa City AI Review System</div>
-        <div id="userIdDisplay" class="text-[8px] font-mono text-slate-400 uppercase">USER: AUTHENTICATING...</div>
+        <div id="userIdDisplay" class="text-[8px] font-mono text-slate-400 uppercase tracking-tighter">USER: AUTHENTICATING...</div>
     </footer>
 
     <!-- Review Modal -->
@@ -207,25 +211,25 @@
             <div class="p-6 overflow-y-auto grid grid-cols-1 lg:grid-cols-2 gap-6 bg-slate-50/50 scroll-hide">
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-3">
-                        <div><label class="text-[10px] font-black text-slate-400 uppercase block mb-1">案件ID</label><input type="text" id="edit-id" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white font-mono"></div>
-                        <div><label class="text-[10px] font-black text-slate-400 uppercase block mb-1">日時</label><input type="text" id="edit-date" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white"></div>
+                        <div><label class="text-[10px] font-black text-slate-400 uppercase block mb-1">案件ID</label><input type="text" id="edit-id" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white font-mono shadow-sm"></div>
+                        <div><label class="text-[10px] font-black text-slate-400 uppercase block mb-1">日時</label><input type="text" id="edit-date" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white shadow-sm"></div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
-                        <div><label class="text-[10px] font-black text-slate-400 uppercase block mb-1">セッションID</label><input type="text" id="edit-session" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white"></div>
-                        <div><label class="text-[10px] font-black text-slate-400 uppercase block mb-1">ユーザーID</label><input type="text" id="edit-userId" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white"></div>
+                        <div><label class="text-[10px] font-black text-slate-400 uppercase block mb-1">セッションID</label><input type="text" id="edit-session" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white shadow-sm"></div>
+                        <div><label class="text-[10px] font-black text-slate-400 uppercase block mb-1">ユーザーID</label><input type="text" id="edit-userId" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white shadow-sm"></div>
                     </div>
-                    <div><label class="text-[10px] font-black text-slate-400 uppercase block mb-1">問い合わせ内容</label><textarea id="edit-query" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm h-32 bg-white leading-relaxed"></textarea></div>
-                    <div><label class="text-[10px] font-black text-indigo-500 uppercase block mb-1">AIの回答内容</label><textarea id="edit-answer" class="w-full px-4 py-3 border border-indigo-100 bg-indigo-50/30 rounded-xl text-sm h-48 bg-white leading-relaxed"></textarea></div>
+                    <div><label class="text-[10px] font-black text-slate-400 uppercase block mb-1">問い合わせ内容</label><textarea id="edit-query" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm h-32 bg-white leading-relaxed shadow-sm"></textarea></div>
+                    <div><label class="text-[10px] font-black text-indigo-500 uppercase block mb-1">AIの回答内容</label><textarea id="edit-answer" class="w-full px-4 py-3 border border-indigo-100 bg-indigo-50/30 rounded-xl text-sm h-48 bg-white leading-relaxed shadow-sm"></textarea></div>
                 </div>
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-3">
                         <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-sm"><label class="text-[10px] font-black text-slate-400 block mb-2 underline decoration-indigo-300 uppercase">Judgment</label><select id="edit-judge" class="w-full px-2 py-2 border border-slate-200 rounded-lg text-sm font-black bg-white"><option value="◎正解">◎ 正解</option><option value="〇一部正解">〇 一部正解</option><option value="✕不正解">✕ 不正解</option><option value="△判別不能">△ 判別不能</option></select></div>
                         <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-sm"><label class="text-[10px] font-black text-slate-400 block mb-2 uppercase">Error Type</label><select id="edit-errorType" class="w-full px-2 py-2 border border-slate-200 rounded-lg text-sm bg-white"><option value="なし">なし</option><option value="RAG欠如">RAG欠如</option><option value="ハルシネーション">ハルシネーション</option><option value="指示無視">指示無視</option><option value="文脈喪失">文脈喪失</option><option value="その他">その他</option></select></div>
                     </div>
-                    <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-sm"><label class="text-[10px] font-black text-slate-400 block mb-2">所管課（最大3枠）</label><div class="grid grid-cols-3 gap-2"><input type="text" id="edit-dept1" class="px-2 py-2 border rounded-lg text-xs" placeholder="課1"><input type="text" id="edit-dept2" class="px-2 py-2 border rounded-lg text-xs" placeholder="課2"><input type="text" id="edit-dept3" class="px-2 py-2 border rounded-lg text-xs" placeholder="課3"></div></div>
+                    <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-sm"><label class="text-[10px] font-black text-slate-400 block mb-2">所管課（最大3枠）</label><div class="grid grid-cols-3 gap-2"><input type="text" id="edit-dept1" class="px-2 py-2 border border-slate-200 rounded-lg text-xs" placeholder="課1"><input type="text" id="edit-dept2" class="px-2 py-2 border border-slate-200 rounded-lg text-xs" placeholder="課2"><input type="text" id="edit-dept3" class="px-2 py-2 border border-slate-200 rounded-lg text-xs" placeholder="課3"></div></div>
                     <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-sm"><label class="text-[10px] font-black text-slate-400 block mb-2 uppercase">Status</label><select id="edit-status" class="w-full px-2 py-2 border border-slate-200 rounded-lg text-sm bg-white"><option value="未着手">未着手</option><option value="対応中">対応中</option><option value="完了">完了</option><option value="保留">保留</option></select></div>
-                    <div><label class="text-[10px] font-black text-emerald-600 block mb-1 uppercase">Ideal Answer</label><textarea id="edit-ideal" class="w-full px-4 py-3 border border-emerald-100 bg-emerald-50/20 rounded-xl text-sm h-32 leading-relaxed" placeholder="ナレッジ修正案など"></textarea></div>
-                    <div><label class="text-[10px] font-black text-amber-600 block mb-1 uppercase">Review Note</label><textarea id="edit-action" class="w-full px-4 py-3 border border-amber-100 bg-amber-50/20 rounded-xl text-sm h-32 leading-relaxed" placeholder="改善アクションメモ"></textarea></div>
+                    <div><label class="text-[10px] font-black text-emerald-600 block mb-1 uppercase">Ideal Answer</label><textarea id="edit-ideal" class="w-full px-4 py-3 border border-emerald-100 bg-emerald-50/20 rounded-xl text-sm h-32 leading-relaxed shadow-sm" placeholder="修正後の理想回答案"></textarea></div>
+                    <div><label class="text-[10px] font-black text-amber-600 block mb-1 uppercase">Review Note</label><textarea id="edit-action" class="w-full px-4 py-3 border border-amber-100 bg-amber-50/20 rounded-xl text-sm h-32 leading-relaxed shadow-sm" placeholder="改善ポイント等のメモ"></textarea></div>
                 </div>
             </div>
             <div class="p-5 border-t border-slate-100 flex justify-end gap-3 bg-white">
@@ -235,18 +239,18 @@
         </div>
     </div>
 
-    <!-- Firebase SDK -->
+    <!-- Firebase & App Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, deleteDoc, getDocs, onSnapshot, writeBatch, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, getDocs, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Firebase Config
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'answer-review-system';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'amakusa-ai-review';
 
         // Globals
         window.fullData = [];
@@ -256,12 +260,12 @@
         window.currentEditingId = null;
 
         // UI Handlers
-        function showMessage(text, isError = false) {
+        function showMessage(text, isError = false, persist = false) {
             const el = document.getElementById('uiMessage');
-            el.textContent = text;
-            el.className = `fixed top-16 left-1/2 -translate-x-1/2 z-[200] px-6 py-3 rounded-full shadow-2xl text-sm font-bold flex items-center gap-2 transition-all ${isError ? 'bg-rose-600 text-white' : 'bg-slate-800 text-white'}`;
+            el.innerHTML = text;
+            el.className = `fixed top-20 left-1/2 -translate-x-1/2 z-[200] px-8 py-4 rounded-2xl shadow-2xl text-sm font-bold flex items-center gap-3 transition-all ${isError ? 'bg-rose-600 text-white' : 'bg-slate-800 text-white'}`;
             el.classList.remove('hidden');
-            setTimeout(() => el.classList.add('hidden'), 5000);
+            if (!persist) setTimeout(() => el.classList.add('hidden'), 5000);
         }
 
         const initCloud = async () => {
@@ -275,19 +279,19 @@
             } catch (err) {
                 console.error("Auth Error", err);
                 updateLoadStatus("CLOUD OFFLINE", "text-rose-500");
-                showMessage("認証に失敗しました。オフラインモードです。", true);
+                showMessage("クラウド接続に失敗しました。再読み込みしてください。", true);
                 return;
             }
 
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     document.getElementById('userIdDisplay').textContent = `USER ID: ${user.uid}`;
-                    setupRealtimeSync(user.uid);
+                    setupRealtimeSync();
                 }
             });
         };
 
-        const setupRealtimeSync = (uid) => {
+        const setupRealtimeSync = () => {
             const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'answers');
             onSnapshot(colRef, (snapshot) => {
                 window.fullData = snapshot.docs.map(doc => doc.data());
@@ -302,59 +306,81 @@
             });
         };
 
+        // CSV Import Handler
         document.getElementById('csvUpload').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
-            if (!confirm("既存のクラウドデータを全て消去し、新しいCSVに置き換えますか？")) {
+            // 認証チェック
+            if (!auth.currentUser) {
+                showMessage("認証が完了していません。しばらく待ってから再度お試しください。", true);
                 e.target.value = "";
                 return;
             }
 
-            showMessage("CSV解析中...");
-            updateLoadStatus("PROCESSING CSV...", "text-indigo-500");
+            if (!confirm("【注意】既存のクラウドデータを全て消去し、新しいCSVに置き換えますか？")) {
+                e.target.value = "";
+                return;
+            }
+
+            showMessage("<i data-lucide='loader' class='animate-spin w-5 h-5'></i> CSVを解析中...");
+            lucide.createIcons();
             
             Papa.parse(file, {
                 header: true,
                 skipEmptyLines: true,
+                transformHeader: (h) => h.trim(), // ヘッダーの余分な空白を除去
                 complete: async (results) => {
                     try {
                         const newData = results.data.map((item, index) => {
-                            const rawDepts = (item['所管課'] || item['dept1'] || '').split(/[\n,]/);
-                            const id = (item['案件ID'] || item['id'] || `CASE-${Date.now()}-${index}`).toString().trim();
+                            // 日本語・英語両方のヘッダーに対応
+                            const getVal = (keys) => {
+                                for(const k of keys) if (item[k] !== undefined) return item[k];
+                                return '';
+                            };
+
+                            const rawDepts = (getVal(['所管課', 'dept', 'department']) || '').split(/[\n,]/);
+                            const id = (getVal(['案件ID', 'id']) || `CASE-${Date.now()}-${index}`).toString().trim();
+
                             return {
                                 id: id,
-                                session: item['セッションID'] || item['session'] || '',
-                                date: item['問い合わせ日時'] || item['date'] || '',
-                                userId: item['ユーザーID'] || item['userId'] || '',
-                                query: item['問い合わせ内容'] || item['query'] || '',
-                                answer: item['回答内容'] || item['answer'] || '',
+                                session: getVal(['セッションID', 'session']),
+                                date: getVal(['問い合わせ日時', 'date']),
+                                userId: getVal(['ユーザーID', 'userId']),
+                                query: getVal(['問い合わせ内容', 'query']),
+                                answer: getVal(['回答内容', 'answer']),
                                 dept1: rawDepts[0]?.trim() || '',
                                 dept2: rawDepts[1]?.trim() || '',
                                 dept3: rawDepts[2]?.trim() || '',
-                                judge: item['正誤判定'] || item['judge'] || '△判別不能',
-                                errorType: item['エラー分類'] || item['errorType'] || 'なし',
-                                ideal: item['理想の回答'] || item['ideal'] || '',
-                                action: item['改善アクション'] || item['action'] || '',
-                                status: item['対応状況'] || item['status'] || '未着手'
+                                judge: getVal(['正誤判定', 'judge']) || '△判別不能',
+                                errorType: getVal(['エラー分類', 'errorType']) || 'なし',
+                                ideal: getVal(['理想の回答', 'ideal']),
+                                action: getVal(['改善アクション', 'action']),
+                                status: getVal(['対応状況', 'status']) || '未着手'
                             };
                         });
 
-                        showMessage("既存データを削除中...");
-                        const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'answers');
-                        const querySnapshot = await getDocs(colRef);
-                        const docsToDelete = querySnapshot.docs;
+                        if (newData.length === 0) {
+                            showMessage("インポート可能なデータが見つかりませんでした。", true);
+                            return;
+                        }
 
-                        // Delete in chunks of 500
-                        for (let i = 0; i < docsToDelete.length; i += 500) {
+                        // ステップ1: クラウド上の既存データを全て取得
+                        showMessage("<i data-lucide='loader' class='animate-spin w-5 h-5'></i> クラウドデータをクリーニング中...");
+                        lucide.createIcons();
+                        const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'answers');
+                        const snapshot = await getDocs(colRef);
+                        const docs = snapshot.docs;
+
+                        // 分割削除 (500件ずつ)
+                        for (let i = 0; i < docs.length; i += 500) {
                             const batch = writeBatch(db);
-                            const chunk = docsToDelete.slice(i, i + 500);
-                            chunk.forEach(d => batch.delete(d.ref));
+                            docs.slice(i, i + 500).forEach(d => batch.delete(d.ref));
                             await batch.commit();
                         }
 
-                        showMessage(`新データアップロード中 (${newData.length}件)...`);
-                        // Upload in chunks of 500
+                        // ステップ2: 新しいデータを追加
+                        showMessage(`<i data-lucide='loader' class='animate-spin w-5 h-5'></i> データをアップロード中 (0/${newData.length})...`, false, true);
                         for (let i = 0; i < newData.length; i += 500) {
                             const batch = writeBatch(db);
                             const chunk = newData.slice(i, i + 500);
@@ -363,14 +389,14 @@
                                 batch.set(docRef, record);
                             });
                             await batch.commit();
+                            showMessage(`<i data-lucide='loader' class='animate-spin w-5 h-5'></i> アップロード中 (${Math.min(i+500, newData.length)}/${newData.length})...`, false, true);
                         }
 
-                        showMessage("インポート完了しました");
-                        updateLoadStatus(`UPLOAD SUCCESS: ${newData.length}`, "text-emerald-500");
+                        showMessage("インポートが完了しました。全ユーザーの画面が更新されます。");
+                        updateLoadStatus(`IMPORT SUCCESS: ${newData.length}`, "text-emerald-500");
                     } catch (err) {
                         console.error("Import Error", err);
-                        showMessage("クラウドへの保存中にエラーが発生しました", true);
-                        updateLoadStatus("IMPORT FAILED", "text-rose-500");
+                        showMessage(`エラーが発生しました: ${err.message}`, true);
                     } finally {
                         e.target.value = "";
                     }
@@ -378,7 +404,7 @@
             });
         });
 
-        // Functions
+        // 共通関数
         function updateLoadStatus(text, colorClass) {
             const el = document.getElementById('loadStatus');
             if (el) { el.textContent = text; el.className = `text-[9px] font-bold uppercase tracking-widest ${colorClass}`; }
@@ -526,12 +552,14 @@
         window.closeModal = () => { document.getElementById('reviewModal').classList.add('hidden'); };
 
         window.saveChanges = async () => {
+            if (!auth.currentUser) return showMessage("ログイン認証が切れています。再読み込みしてください。", true);
             const id = document.getElementById('edit-id').value.trim();
             if (!id) return alert("案件IDを入力してください");
             
             const btn = document.getElementById('saveBtn');
             btn.disabled = true;
-            btn.textContent = "SAVING...";
+            btn.innerHTML = "<i data-lucide='loader' class='animate-spin w-4 h-4'></i> 保存中...";
+            lucide.createIcons();
 
             const record = { 
                 id, 
@@ -556,7 +584,7 @@
                 window.closeModal();
                 showMessage(`案件 ${id} をクラウドに保存しました`);
             } catch (err) {
-                alert("クラウド保存に失敗しました。接続を確認してください。");
+                alert("クラウド保存に失敗しました。接続環境を確認してください。");
                 console.error(err);
             } finally {
                 btn.disabled = false;
@@ -566,20 +594,18 @@
         };
 
         window.clearCloudData = async () => {
-            if (confirm("クラウド上の全データを完全に消去しますか？（チーム全員の画面から消えます）")) {
-                updateLoadStatus("CLEARING CLOUD...", "text-rose-500");
+            if (!auth.currentUser) return showMessage("認証が完了していません。", true);
+            if (confirm("クラウド上の全データを消去しますか？（元に戻せません）")) {
+                showMessage("全件消去を実行中...");
                 try {
-                    const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'answers');
-                    const querySnapshot = await getDocs(colRef);
-                    const docs = querySnapshot.docs;
-                    
+                    const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'answers'));
+                    const docs = snapshot.docs;
                     for (let i = 0; i < docs.length; i += 500) {
                         const batch = writeBatch(db);
-                        const chunk = docs.slice(i, i + 500);
-                        chunk.forEach(d => batch.delete(d.ref));
+                        docs.slice(i, i + 500).forEach(d => batch.delete(d.ref));
                         await batch.commit();
                     }
-                    showMessage("クラウドデータを空にしました");
+                    showMessage("クラウドデータを完全に空にしました");
                 } catch (err) {
                     console.error(err);
                     showMessage("削除に失敗しました", true);
@@ -588,13 +614,13 @@
         };
 
         window.exportData = () => {
-            if (window.fullData.length === 0) return alert("データがありません");
+            if (window.fullData.length === 0) return alert("エクスポートするデータがありません");
             const exp = window.fullData.map(d => ({
                 "案件ID": d.id, "セッションID": d.session, "問い合わせ日時": d.date, "ユーザーID": d.userId, "問い合わせ内容": d.query, "回答内容": d.answer, "所管課": [d.dept1, d.dept2, d.dept3].filter(Boolean).join('\n'), "正誤判定": d.judge, "エラー分類": d.errorType, "理想の回答": d.ideal, "改善アクション": d.action, "対応状況": d.status
             }));
             const csv = Papa.unparse(exp);
             const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a"); link.setAttribute("href", URL.createObjectURL(blob)); link.setAttribute("download", `分析結果_${new Date().toISOString().split('T')[0]}.csv`); link.click();
+            const link = document.createElement("a"); link.setAttribute("href", URL.createObjectURL(blob)); link.setAttribute("download", `AI分析結果_${new Date().toISOString().split('T')[0]}.csv`); link.click();
         };
 
         window.toggleSort = toggleSort;
