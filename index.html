@@ -24,7 +24,7 @@
             background-color: #f1f5f9;
         }
 
-        /* 固定レイアウト設定 */
+        /* テーブルレイアウトの固定 */
         .data-table { border-spacing: 0; width: 100%; table-layout: fixed; }
         .data-table th, .data-table td {
             border-right: 1px solid #e2e8f0;
@@ -64,6 +64,14 @@
         #uiMessage { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); }
         .drop-zone { border: 2px dashed #cbd5e1; transition: all 0.2s; }
         .drop-zone.active { border-color: #4f46e5; background-color: #f5f3ff; }
+        
+        /* グラフ用コンテナの厳格な制御 */
+        .chart-container {
+            position: relative;
+            height: 180px; /* 高さを固定 */
+            width: 100%;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body class="min-h-screen text-slate-800">
@@ -88,7 +96,7 @@
                     <i data-lucide="plus-circle" class="w-4 h-4"></i>新規登録
                 </button>
                 <label for="csvUpload" class="cursor-pointer bg-white border-2 border-slate-200 hover:border-indigo-400 text-slate-700 px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 shadow-sm">
-                    <i data-lucide="upload" class="w-4 h-4 text-indigo-500"></i>インポート
+                    <i data-lucide="upload" class="w-4 h-4 text-indigo-500"></i>CSVインポート
                 </label>
                 <input type="file" id="csvUpload" class="hidden" accept=".csv">
                 <button onclick="exportData()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 shadow-md">
@@ -100,7 +108,6 @@
         </div>
     </header>
 
-    <!-- UI Overlay Messages -->
     <div id="uiMessage" class="hidden fixed top-24 left-1/2 -translate-x-1/2 z-[300] min-w-[320px] px-8 py-5 rounded-3xl text-sm font-bold flex flex-col items-center gap-3 text-center transition-all"></div>
 
     <main class="p-6 space-y-6">
@@ -124,17 +131,17 @@
                     <div class="text-3xl font-black text-rose-500" id="stat-errors">0</div>
                 </div>
             </div>
-            <!-- Charts Section -->
-            <!-- はみ出し防止のためコンテナの高さを拡大 (h-60 -> h-72) -->
-            <div class="xl:col-span-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-72">
-                <h2 class="text-xs font-black text-slate-500 mb-2 flex items-center gap-2 uppercase tracking-tighter"><i data-lucide="pie-chart" class="w-4 h-4"></i>判定内訳</h2>
-                <div class="flex-grow relative h-full w-full overflow-hidden">
+            
+            <!-- Charts Section (絶対に枠からはみ出さない設定) -->
+            <div class="xl:col-span-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-64">
+                <h2 class="text-xs font-black text-slate-500 mb-4 flex items-center gap-2 uppercase tracking-tighter"><i data-lucide="pie-chart" class="w-4 h-4"></i>判定内訳</h2>
+                <div class="chart-container">
                     <canvas id="judgmentChart"></canvas>
                 </div>
             </div>
-            <div class="xl:col-span-5 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-72">
-                <h2 class="text-xs font-black text-slate-500 mb-2 flex items-center gap-2 uppercase tracking-tighter"><i data-lucide="bar-chart-3" class="w-4 h-4"></i>主要エラー分類</h2>
-                <div class="flex-grow relative h-full w-full overflow-hidden">
+            <div class="xl:col-span-5 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-64">
+                <h2 class="text-xs font-black text-slate-500 mb-4 flex items-center gap-2 uppercase tracking-tighter"><i data-lucide="bar-chart-3" class="w-4 h-4"></i>主要エラー分類</h2>
+                <div class="chart-container">
                     <canvas id="errorChart"></canvas>
                 </div>
             </div>
@@ -163,7 +170,6 @@
                 <div class="text-xs font-black text-slate-400 tracking-widest"><span id="recordCount" class="text-indigo-600 text-lg mr-1">0</span> RECORDS</div>
             </div>
             
-            <!-- Grid -->
             <div class="overflow-auto flex-grow relative bg-slate-50/20">
                 <table class="data-table hidden" id="mainDataTable">
                     <thead>
@@ -253,7 +259,7 @@
                     fullData = JSON.parse(saved);
                     updateDeptFilterList();
                     applyFilters();
-                    showMessage("前回のデータを読み込みました");
+                    showMessage("データを読み込みました");
                 } catch(e) { console.error(e); }
             }
             refreshUI();
@@ -386,7 +392,7 @@
         function getJudgeClass(j) { return j==='◎正解' ? 'row-correct' : j==='〇一部正解' ? 'row-partial' : j==='✕不正解' ? 'row-incorrect' : 'row-unknown'; }
         function getBadgeColor(j) { return j==='◎正解' ? 'bg-emerald-100 text-emerald-700' : j==='〇一部正解' ? 'bg-amber-100 text-amber-700' : j==='✕不正解' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-500'; }
 
-        // --- グラフ表示修正箇所 (高さを活かし、はみ出しを防止) ---
+        // --- グラフ表示修正箇所 (絶対に突き抜けない設定) ---
         function initCharts() {
             const judgeCounts = {}; fullData.forEach(d => judgeCounts[d.judge] = (judgeCounts[d.judge] || 0) + 1);
             const errorCounts = {}; fullData.filter(d => d.errorType && d.errorType !== 'なし').forEach(d => errorCounts[d.errorType] = (errorCounts[d.errorType] || 0) + 1);
@@ -404,18 +410,16 @@
                     }, 
                     options: { 
                         responsive: true, 
-                        maintainAspectRatio: false, 
-                        layout: {
-                            padding: { top: 10, bottom: 10, left: 10, right: 10 }
-                        },
+                        maintainAspectRatio: true, // アスペクト比を維持して巨大化を防ぐ
+                        aspectRatio: 2, // 横長に設定
+                        layout: { padding: 5 },
                         plugins: { 
                             legend: { 
-                                position: 'bottom', // 下側に配置
+                                position: 'right', // 横並びにする
                                 labels: { 
                                     usePointStyle: true, 
-                                    boxWidth: 8, 
-                                    font: { size: 10, weight: 'bold' },
-                                    padding: 15
+                                    boxWidth: 6, 
+                                    font: { size: 9, weight: 'bold' }
                                 } 
                             },
                             tooltip: { enabled: true }
@@ -433,12 +437,13 @@
                     }, 
                     options: { 
                         responsive: true, 
-                        maintainAspectRatio: false, 
+                        maintainAspectRatio: true, 
+                        aspectRatio: 2.2, 
                         indexAxis: 'y', 
                         plugins: { legend: { display: false } }, 
                         scales: { 
                             x: { grid: { display: false }, ticks: { font: { size: 9 } } }, 
-                            y: { grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' } } } 
+                            y: { grid: { display: false }, ticks: { font: { size: 9, weight: 'bold' } } } 
                         } 
                     } 
                 });
