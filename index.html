@@ -125,14 +125,18 @@
                 </div>
             </div>
             <!-- Charts Section -->
-            <!-- はみ出し防止のためコンテナの高さを確保 (h-48 -> h-60) -->
-            <div class="xl:col-span-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-60">
+            <!-- はみ出し防止のためコンテナの高さを拡大 (h-60 -> h-72) -->
+            <div class="xl:col-span-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-72">
                 <h2 class="text-xs font-black text-slate-500 mb-2 flex items-center gap-2 uppercase tracking-tighter"><i data-lucide="pie-chart" class="w-4 h-4"></i>判定内訳</h2>
-                <div class="flex-grow relative h-full w-full"><canvas id="judgmentChart"></canvas></div>
+                <div class="flex-grow relative h-full w-full overflow-hidden">
+                    <canvas id="judgmentChart"></canvas>
+                </div>
             </div>
-            <div class="xl:col-span-5 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-60">
+            <div class="xl:col-span-5 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-72">
                 <h2 class="text-xs font-black text-slate-500 mb-2 flex items-center gap-2 uppercase tracking-tighter"><i data-lucide="bar-chart-3" class="w-4 h-4"></i>主要エラー分類</h2>
-                <div class="flex-grow relative h-full w-full"><canvas id="errorChart"></canvas></div>
+                <div class="flex-grow relative h-full w-full overflow-hidden">
+                    <canvas id="errorChart"></canvas>
+                </div>
             </div>
         </div>
 
@@ -382,7 +386,7 @@
         function getJudgeClass(j) { return j==='◎正解' ? 'row-correct' : j==='〇一部正解' ? 'row-partial' : j==='✕不正解' ? 'row-incorrect' : 'row-unknown'; }
         function getBadgeColor(j) { return j==='◎正解' ? 'bg-emerald-100 text-emerald-700' : j==='〇一部正解' ? 'bg-amber-100 text-amber-700' : j==='✕不正解' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-500'; }
 
-        // --- グラフ表示修正箇所 ---
+        // --- グラフ表示修正箇所 (高さを活かし、はみ出しを防止) ---
         function initCharts() {
             const judgeCounts = {}; fullData.forEach(d => judgeCounts[d.judge] = (judgeCounts[d.judge] || 0) + 1);
             const errorCounts = {}; fullData.filter(d => d.errorType && d.errorType !== 'なし').forEach(d => errorCounts[d.errorType] = (errorCounts[d.errorType] || 0) + 1);
@@ -401,12 +405,20 @@
                     options: { 
                         responsive: true, 
                         maintainAspectRatio: false, 
-                        layout: { padding: 10 },
+                        layout: {
+                            padding: { top: 10, bottom: 10, left: 10, right: 10 }
+                        },
                         plugins: { 
                             legend: { 
-                                position: 'bottom', // はみ出し防止のため右から下へ変更
-                                labels: { usePointStyle: true, boxWidth: 6, font: { size: 10, weight: 'bold' } } 
-                            } 
+                                position: 'bottom', // 下側に配置
+                                labels: { 
+                                    usePointStyle: true, 
+                                    boxWidth: 8, 
+                                    font: { size: 10, weight: 'bold' },
+                                    padding: 15
+                                } 
+                            },
+                            tooltip: { enabled: true }
                         } 
                     } 
                 });
@@ -417,14 +429,17 @@
                     type: 'bar', 
                     data: { 
                         labels: Object.keys(errorCounts), 
-                        datasets: [{ label: 'Count', data: Object.values(errorCounts), backgroundColor: '#6366f1', borderRadius: 4 }] 
+                        datasets: [{ label: '件数', data: Object.values(errorCounts), backgroundColor: '#6366f1', borderRadius: 4 }] 
                     }, 
                     options: { 
                         responsive: true, 
                         maintainAspectRatio: false, 
                         indexAxis: 'y', 
                         plugins: { legend: { display: false } }, 
-                        scales: { x: { grid: { display: false }, ticks: { font: { size: 9 } } }, y: { grid: { display: false }, ticks: { font: { size: 9, weight: 'bold' } } } } 
+                        scales: { 
+                            x: { grid: { display: false }, ticks: { font: { size: 9 } } }, 
+                            y: { grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' } } } 
+                        } 
                     } 
                 });
             }
