@@ -321,7 +321,7 @@
     </div>
 
     <script>
-        const STORAGE_KEY = 'ai_analysis_dashboard_data_v2';
+        const STORAGE_KEY = 'ai_analysis_dashboard_data_v3'; // キーを更新して以前のキャッシュを確実に排除
         let fullData = [];
         let filteredData = [];
         let charts = {};
@@ -330,12 +330,13 @@
 
         lucide.createIcons();
 
+        // 初期化: 保存されたデータを確実に読み込む
         function initializeApp() {
             try {
                 const saved = localStorage.getItem(STORAGE_KEY);
                 if (saved) {
                     const parsed = JSON.parse(saved);
-                    if (Array.isArray(parsed)) {
+                    if (Array.isArray(parsed) && parsed.length > 0) {
                         fullData = parsed;
                         filteredData = [...fullData];
                         refreshUI();
@@ -349,13 +350,19 @@
 
         function updateLoadStatus(text, colorClass) {
             const el = document.getElementById('loadStatus');
-            el.textContent = text;
-            el.className = `text-[10px] font-bold uppercase tracking-widest ${colorClass}`;
+            if (el) {
+                el.textContent = text;
+                el.className = `text-[10px] font-bold uppercase tracking-widest ${colorClass}`;
+            }
         }
 
+        // CSVアップロード
         document.getElementById('csvUpload').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
+
+            // ファイル読み込み開始時にインジケータ表示
+            updateLoadStatus("PROCESSING CSV...", "text-amber-500");
 
             Papa.parse(file, {
                 header: true,
@@ -367,7 +374,9 @@
         });
 
         function processNewData(data) {
-            // インポート時にデータを入れ替えるよう修正
+            // 既存の配列を空にする（確実な消去）
+            fullData = [];
+            
             const newData = data.map((item, index) => {
                 const rawDepts = (item['所管課'] || '').split(/[\n,]/);
                 return {
@@ -389,17 +398,31 @@
                 };
             });
 
-            // 既存データを完全に破棄し、新規データのみにする
+            // 新しいデータのみをセット
             fullData = newData; 
+            
+            // ローカルストレージを一度消去してから保存
+            localStorage.removeItem(STORAGE_KEY);
             saveToLocal();
-            applyFilters(); 
+            
+            // 全てのUIコンポーネントを強制リフレッシュ
+            filteredData = [...fullData];
+            refreshUI(); 
+            
             updateLoadStatus(`DATA REPLACED: ${newData.length} RECORDS`, 'text-indigo-500');
+            
+            // 入力フォームのリセット
+            document.getElementById('csvUpload').value = "";
         }
 
         function refreshUI() {
+            // 1. ダッシュボード数値を更新
             updateDashboard();
-            renderTable();
+            // 2. グラフを再描画
             initCharts();
+            // 3. 一覧表を再描画
+            renderTable();
+            // 4. アイコンを再生成
             lucide.createIcons();
         }
 
@@ -413,7 +436,7 @@
         }
 
         function clearStoredData() {
-            if (confirm("全データを削除します。よろしいですか？")) {
+            if (confirm("現在保存されているすべてのデータを削除します。元には戻せませんが、よろしいですか？")) {
                 localStorage.removeItem(STORAGE_KEY);
                 fullData = [];
                 filteredData = [];
@@ -494,31 +517,39 @@
             if (charts.error) charts.error.destroy();
 
             const ctx1 = document.getElementById('judgmentChart');
-            if (ctx1 && fullData.length > 0) {
-                charts.judgment = new Chart(ctx1, {
-                    type: 'doughnut',
-                    data: {
-                        labels: Object.keys(judgeCounts),
-                        datasets: [{
-                            data: Object.values(judgeCounts),
-                            backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#94a3b8'],
-                            borderWidth: 0,
-                        }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } } }
-                });
+            if (ctx1) {
+                if (fullData.length === 0) {
+                   ctx1.getContext('2d').clearRect(0,0,ctx1.width,ctx1.height);
+                } else {
+                    charts.judgment = new Chart(ctx1, {
+                        type: 'doughnut',
+                        data: {
+                            labels: Object.keys(judgeCounts),
+                            datasets: [{
+                                data: Object.values(judgeCounts),
+                                backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#94a3b8'],
+                                borderWidth: 0,
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } } }
+                    });
+                }
             }
 
             const ctx2 = document.getElementById('errorChart');
-            if (ctx2 && Object.keys(errorCounts).length > 0) {
-                charts.error = new Chart(ctx2, {
-                    type: 'bar',
-                    data: {
-                        labels: Object.keys(errorCounts),
-                        datasets: [{ label: '件数', data: Object.values(errorCounts), backgroundColor: '#6366f1', borderRadius: 8 }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { display: false } } } }
-                });
+            if (ctx2) {
+                if (Object.keys(errorCounts).length === 0) {
+                    ctx2.getContext('2d').clearRect(0,0,ctx2.width,ctx2.height);
+                } else {
+                    charts.error = new Chart(ctx2, {
+                        type: 'bar',
+                        data: {
+                            labels: Object.keys(errorCounts),
+                            datasets: [{ label: '件数', data: Object.values(errorCounts), backgroundColor: '#6366f1', borderRadius: 8 }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { display: false } } } }
+                    });
+                }
             }
         }
 
@@ -647,7 +678,7 @@
             }
 
             saveToLocal();
-            applyFilters();
+            refreshUI();
             closeModal();
             updateLoadStatus(`DATA SAVED: ${id}`, 'text-emerald-600');
         }
@@ -668,7 +699,8 @@
             link.click();
         }
 
-        initializeApp();
+        // 初期化実行
+        window.onload = initializeApp;
     </script>
 </body>
 </html>
