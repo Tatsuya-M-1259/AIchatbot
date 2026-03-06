@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Answer Analysis & Reviewer</title>
     
-    <!-- アイコン設定 (Favicon / Web App Icon) -->
+    <!-- アイコン設定 -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -51,7 +49,7 @@
                 </div>
                 <div>
                     <h1 class="font-bold text-lg leading-tight text-slate-900">回答正誤管理システム</h1>
-                    <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Analysis & Peer Review Portal</p>
+                    <p id="loadStatus" class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">NO DATA LOADED</p>
                 </div>
             </div>
             
@@ -66,6 +64,8 @@
                     <i data-lucide="download" class="w-4 h-4"></i>
                     出力
                 </button>
+
+                <div class="w-px h-6 bg-slate-200 mx-1"></div>
 
                 <button onclick="clearStoredData()" class="text-slate-400 hover:text-rose-500 p-2 transition-colors" title="全データを削除">
                     <i data-lucide="trash-2" class="w-5 h-5"></i>
@@ -235,30 +235,35 @@
     </div>
 
     <script>
-        const STORAGE_KEY = 'ai_analysis_dashboard_data';
+        const STORAGE_KEY = 'ai_analysis_dashboard_data_v2';
         let fullData = [];
         let filteredData = [];
         let charts = {};
         let currentEditingId = null;
 
-        // Initialize Icons
+        // アイコン初期化
         lucide.createIcons();
 
-        // ページ読み込み時に保存されたデータを復元
-        window.addEventListener('load', () => {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                try {
-                    fullData = JSON.parse(saved);
-                    filteredData = [...fullData];
-                    refreshUI();
-                } catch (e) {
-                    console.error("Failed to load saved data", e);
+        // 確実なデータ読み込み関数
+        function initializeApp() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        fullData = parsed;
+                        filteredData = [...fullData];
+                        refreshUI();
+                        document.getElementById('loadStatus').textContent = `SAVED DATA LOADED: ${fullData.length} RECORDS`;
+                        document.getElementById('loadStatus').classList.replace('text-slate-400', 'text-emerald-500');
+                    }
                 }
+            } catch (e) {
+                console.error("Storage load failed", e);
             }
-        });
+        }
 
-        // CSV Upload Handler
+        // CSVアップロード
         document.getElementById('csvUpload').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -274,7 +279,7 @@
 
         function processNewData(data) {
             fullData = data.map((item, index) => ({
-                id: item['案件ID'] || `ID-${index}`,
+                id: item['案件ID'] || `ID-${Date.now()}-${index}`,
                 session: item['セッションID'] || '',
                 date: item['問い合わせ日時'] || '',
                 userId: item['ユーザーID'] || '',
@@ -292,6 +297,9 @@
             saveToLocal();
             filteredData = [...fullData];
             refreshUI();
+            
+            document.getElementById('loadStatus').textContent = `NEW DATA IMPORTED: ${fullData.length} RECORDS`;
+            document.getElementById('loadStatus').classList.replace('text-slate-400', 'text-indigo-500');
         }
 
         function refreshUI() {
@@ -301,16 +309,28 @@
         }
 
         function saveToLocal() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(fullData));
+            try {
+                const jsonStr = JSON.stringify(fullData);
+                localStorage.setItem(STORAGE_KEY, jsonStr);
+            } catch (e) {
+                console.error("Storage save failed", e);
+                if (e.name === 'QuotaExceededError') {
+                    alert("ブラウザの保存容量がいっぱいです。不要なデータを削除するか、CSVを分割してください。");
+                } else {
+                    alert("データの保存に失敗しました。ブラウザの設定を確認してください。");
+                }
+            }
         }
 
         function clearStoredData() {
-            if (confirm("すべてのインポートデータを削除します。よろしいですか？")) {
+            if (confirm("現在保存されているすべてのデータを削除します。元には戻せませんが、よろしいですか？")) {
                 localStorage.removeItem(STORAGE_KEY);
                 fullData = [];
                 filteredData = [];
                 refreshUI();
-                location.reload(); // 画面をリセット
+                document.getElementById('loadStatus').textContent = "NO DATA LOADED";
+                document.getElementById('loadStatus').className = "text-[10px] text-slate-400 font-bold uppercase tracking-widest";
+                location.reload();
             }
         }
 
@@ -318,9 +338,9 @@
             const total = fullData.length;
             const correct = fullData.filter(d => d.judge === '◎正解').length;
             const partial = fullData.filter(d => d.judge === '〇一部正解').length;
-            const accuracy = total > 0 ? (((correct + partial * 0.5) / total) * 100).toFixed(1) : 0;
+            const accuracy = total > 0 ? (((correct + (partial * 0.5)) / total) * 100).toFixed(1) : 0;
             const pending = fullData.filter(d => d.status === '未着手' || d.status === '対応中').length;
-            const errors = fullData.filter(d => d.errorType !== 'なし').length;
+            const errors = fullData.filter(d => d.errorType && d.errorType !== 'なし').length;
 
             document.getElementById('stat-total').textContent = total;
             document.getElementById('stat-accuracy').textContent = `${accuracy}%`;
@@ -328,21 +348,12 @@
             document.getElementById('stat-errors').textContent = errors;
         }
 
-        function getJudgeClass(judge) {
-            switch(judge) {
-                case '◎正解': return 'row-correct';
-                case '〇一部正解': return 'row-partial';
-                case '✕不正解': return 'row-incorrect';
-                default: return 'row-unknown';
-            }
-        }
-
         function renderTable() {
             const tbody = document.getElementById('dataTableBody');
             tbody.innerHTML = '';
 
             if (filteredData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-12 text-center text-slate-400">データが見つかりませんでした</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-12 text-center text-slate-400">表示できるデータがありません</td></tr>`;
                 return;
             }
 
@@ -369,6 +380,13 @@
             });
         }
 
+        function getJudgeClass(judge) {
+            if (judge === '◎正解') return 'row-correct';
+            if (judge === '〇一部正解') return 'row-partial';
+            if (judge === '✕不正解') return 'row-incorrect';
+            return 'row-unknown';
+        }
+
         function getBadgeColor(judge) {
             if (judge === '◎正解') return 'bg-emerald-100 text-emerald-700';
             if (judge === '〇一部正解') return 'bg-amber-100 text-amber-700';
@@ -381,13 +399,13 @@
             fullData.forEach(d => judgeCounts[d.judge] = (judgeCounts[d.judge] || 0) + 1);
 
             const errorCounts = {};
-            fullData.filter(d => d.errorType !== 'なし').forEach(d => errorCounts[d.errorType] = (errorCounts[d.errorType] || 0) + 1);
+            fullData.filter(d => d.errorType && d.errorType !== 'なし').forEach(d => errorCounts[d.errorType] = (errorCounts[d.errorType] || 0) + 1);
 
             if (charts.judgment) charts.judgment.destroy();
             if (charts.error) charts.error.destroy();
 
             const ctx1 = document.getElementById('judgmentChart');
-            if(ctx1) {
+            if (ctx1 && fullData.length > 0) {
                 charts.judgment = new Chart(ctx1, {
                     type: 'doughnut',
                     data: {
@@ -408,7 +426,7 @@
             }
 
             const ctx2 = document.getElementById('errorChart');
-            if(ctx2) {
+            if (ctx2 && Object.keys(errorCounts).length > 0) {
                 charts.error = new Chart(ctx2, {
                     type: 'bar',
                     data: {
@@ -425,13 +443,13 @@
                         maintainAspectRatio: false,
                         indexAxis: 'y',
                         plugins: { legend: { display: false } },
-                        scales: { x: { grid: { display: false } }, y: { grid: { display: false } } }
+                        scales: { x: { grid: { display: false }, ticks: { stepSize: 1 } }, y: { grid: { display: false } } }
                     }
                 });
             }
         }
 
-        // Search & Filter
+        // 検索・フィルタリング
         const searchInput = document.getElementById('searchInput');
         const filterJudge = document.getElementById('filterJudge');
 
@@ -454,7 +472,7 @@
             renderTable();
         }
 
-        // Modal Logic
+        // モーダル
         function openReview(id) {
             const item = fullData.find(d => d.id === id);
             if(!item) return;
@@ -502,6 +520,9 @@
             link.click();
             document.body.removeChild(link);
         }
+
+        // 即時実行
+        initializeApp();
     </script>
 </body>
 </html>
