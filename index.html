@@ -220,7 +220,6 @@
             </div>
             
             <div class="p-8 overflow-y-auto grid grid-cols-1 lg:grid-cols-2 gap-8 scroll-hide">
-                <!-- Left Column: Core Data -->
                 <div class="space-y-5">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
@@ -255,7 +254,6 @@
                     </div>
                 </div>
                 
-                <!-- Right Column: Analysis & Feedback -->
                 <div class="space-y-5">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
@@ -369,8 +367,8 @@
         });
 
         function processNewData(data) {
+            // インポート時にデータを入れ替えるよう修正
             const newData = data.map((item, index) => {
-                // 所管課を改行またはカンマで分割して3つまで割り振る
                 const rawDepts = (item['所管課'] || '').split(/[\n,]/);
                 return {
                     id: item['案件ID'] || `CASE-${Date.now()}-${index}`,
@@ -391,10 +389,11 @@
                 };
             });
 
-            fullData = [...newData, ...fullData];
+            // 既存データを完全に破棄し、新規データのみにする
+            fullData = newData; 
             saveToLocal();
-            applyFilters(); // フィルターとソートを適用して再描画
-            updateLoadStatus(`IMPORT SUCCESS: ${newData.length} ADDED`, 'text-indigo-500');
+            applyFilters(); 
+            updateLoadStatus(`DATA REPLACED: ${newData.length} RECORDS`, 'text-indigo-500');
         }
 
         function refreshUI() {
@@ -531,7 +530,6 @@
                 sortConfig.direction = 'asc';
             }
             
-            // アイコン更新
             const icon = document.getElementById(`sort-icon-${key}`);
             if(icon) {
                 icon.setAttribute('data-lucide', sortConfig.direction === 'asc' ? 'chevron-up' : 'chevron-down');
@@ -558,7 +556,6 @@
                 return matchesSearch && matchesJudge;
             });
 
-            // ソート適用
             if (sortConfig.key) {
                 result.sort((a, b) => {
                     const valA = (a[sortConfig.key] || '').toString();
@@ -658,7 +655,6 @@
         function exportData() {
             if (fullData.length === 0) return alert("データがありません");
             
-            // 出力時は所管課を改行で結合して元の形式に戻す
             const exportData = fullData.map(d => ({
                 ...d,
                 所管課: [d.dept1, d.dept2, d.dept3].filter(Boolean).join('\n')
