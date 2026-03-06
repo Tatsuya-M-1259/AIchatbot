@@ -55,15 +55,20 @@
                 </div>
             </div>
             
-            <div class="flex items-center gap-4">
-                <label for="csvUpload" class="cursor-pointer bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 shadow-sm">
+            <div class="flex items-center gap-2">
+                <label for="csvUpload" class="cursor-pointer bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 shadow-sm">
                     <i data-lucide="upload" class="w-4 h-4"></i>
-                    CSVをインポート
+                    CSVインポート
                 </label>
                 <input type="file" id="csvUpload" class="hidden" accept=".csv">
-                <button onclick="exportData()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 shadow-sm">
+                
+                <button onclick="exportData()" class="bg-slate-900 hover:bg-slate-800 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 shadow-sm">
                     <i data-lucide="download" class="w-4 h-4"></i>
-                    結果を出力
+                    出力
+                </button>
+
+                <button onclick="clearStoredData()" class="text-slate-400 hover:text-rose-500 p-2 transition-colors" title="全データを削除">
+                    <i data-lucide="trash-2" class="w-5 h-5"></i>
                 </button>
             </div>
         </div>
@@ -78,28 +83,28 @@
                     <span class="text-sm font-medium text-slate-500">総案件数</span>
                     <i data-lucide="database" class="w-5 h-5 text-indigo-500"></i>
                 </div>
-                <div class="text-3xl font-bold" id="stat-total">-</div>
+                <div class="text-3xl font-bold" id="stat-total">0</div>
             </div>
             <div class="glass-card p-5 rounded-2xl shadow-sm border border-slate-200">
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-sm font-medium text-slate-500">正解率</span>
                     <i data-lucide="trending-up" class="w-5 h-5 text-emerald-500"></i>
                 </div>
-                <div class="text-3xl font-bold text-emerald-600" id="stat-accuracy">-</div>
+                <div class="text-3xl font-bold text-emerald-600" id="stat-accuracy">0%</div>
             </div>
             <div class="glass-card p-5 rounded-2xl shadow-sm border border-slate-200">
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-sm font-medium text-slate-500">未対応件数</span>
                     <i data-lucide="clock" class="w-5 h-5 text-amber-500"></i>
                 </div>
-                <div class="text-3xl font-bold text-amber-600" id="stat-pending">-</div>
+                <div class="text-3xl font-bold text-amber-600" id="stat-pending">0</div>
             </div>
             <div class="glass-card p-5 rounded-2xl shadow-sm border border-slate-200">
                 <div class="flex items-center justify-between mb-3">
-                    <span class="text-sm font-medium text-slate-500">ハルシネーション等</span>
+                    <span class="text-sm font-medium text-slate-500">エラー検知</span>
                     <i data-lucide="alert-triangle" class="w-5 h-5 text-rose-500"></i>
                 </div>
-                <div class="text-3xl font-bold text-rose-600" id="stat-errors">-</div>
+                <div class="text-3xl font-bold text-rose-600" id="stat-errors">0</div>
             </div>
         </div>
 
@@ -140,13 +145,6 @@
                                 <option value="✕不正解">✕ 不正解</option>
                                 <option value="△判別不能">△ 判別不能</option>
                             </select>
-                            <select id="filterError" class="text-sm border border-slate-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500">
-                                <option value="all">すべてのエラー</option>
-                                <option value="RAG欠如">RAG欠如</option>
-                                <option value="ハルシネーション">ハルシネーション</option>
-                                <option value="指示無視">指示無視</option>
-                                <option value="文脈喪失">文脈喪失</option>
-                            </select>
                         </div>
                     </div>
                     
@@ -163,12 +161,11 @@
                                 </tr>
                             </thead>
                             <tbody id="dataTableBody" class="divide-y divide-slate-100">
-                                <!-- Data rows injected here -->
                                 <tr>
                                     <td colspan="6" class="px-4 py-12 text-center text-slate-400">
                                         <div class="flex flex-col items-center gap-2">
                                             <i data-lucide="file-text" class="w-8 h-8 opacity-20"></i>
-                                            <p>CSVファイルをアップロードしてください</p>
+                                            <p>CSVファイルをインポートしてください</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -238,13 +235,28 @@
     </div>
 
     <script>
+        const STORAGE_KEY = 'ai_analysis_dashboard_data';
         let fullData = [];
         let filteredData = [];
         let charts = {};
-        let currentEditingIndex = -1;
+        let currentEditingId = null;
 
         // Initialize Icons
         lucide.createIcons();
+
+        // ページ読み込み時に保存されたデータを復元
+        window.addEventListener('load', () => {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    fullData = JSON.parse(saved);
+                    filteredData = [...fullData];
+                    refreshUI();
+                } catch (e) {
+                    console.error("Failed to load saved data", e);
+                }
+            }
+        });
 
         // CSV Upload Handler
         document.getElementById('csvUpload').addEventListener('change', function(e) {
@@ -255,21 +267,20 @@
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    processData(results.data);
+                    processNewData(results.data);
                 }
             });
         });
 
-        function processData(data) {
-            // Clean and map data
+        function processNewData(data) {
             fullData = data.map((item, index) => ({
                 id: item['案件ID'] || `ID-${index}`,
-                session: item['セッションID'],
-                date: item['問い合わせ日時'],
-                userId: item['ユーザーID'],
+                session: item['セッションID'] || '',
+                date: item['問い合わせ日時'] || '',
+                userId: item['ユーザーID'] || '',
                 query: item['問い合わせ内容'] || '',
                 answer: item['回答内容'] || '',
-                dept: item['所管課'],
+                dept: item['所管課'] || '',
                 judge: item['正誤判定'] || '△判別不能',
                 errorType: item['エラー分類'] || 'なし',
                 ideal: item['理想の回答'] || '',
@@ -278,10 +289,29 @@
                 length: parseInt(item['文字数']) || 0
             }));
 
+            saveToLocal();
             filteredData = [...fullData];
+            refreshUI();
+        }
+
+        function refreshUI() {
             updateDashboard();
             renderTable();
             initCharts();
+        }
+
+        function saveToLocal() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(fullData));
+        }
+
+        function clearStoredData() {
+            if (confirm("すべてのインポートデータを削除します。よろしいですか？")) {
+                localStorage.removeItem(STORAGE_KEY);
+                fullData = [];
+                filteredData = [];
+                refreshUI();
+                location.reload(); // 画面をリセット
+            }
         }
 
         function updateDashboard() {
@@ -316,10 +346,10 @@
                 return;
             }
 
-            filteredData.forEach((row, index) => {
+            filteredData.forEach((row) => {
                 const tr = document.createElement('tr');
                 tr.className = `hover:bg-slate-50 transition-colors cursor-pointer border-l-4 ${getJudgeClass(row.judge)}`;
-                tr.onclick = () => openReview(index);
+                tr.onclick = () => openReview(row.id);
                 
                 tr.innerHTML = `
                     <td class="px-4 py-4 font-mono text-xs text-slate-500">${row.id}</td>
@@ -346,7 +376,6 @@
             return 'bg-slate-100 text-slate-700';
         }
 
-        // Charts
         function initCharts() {
             const judgeCounts = {};
             fullData.forEach(d => judgeCounts[d.judge] = (judgeCounts[d.judge] || 0) + 1);
@@ -357,76 +386,80 @@
             if (charts.judgment) charts.judgment.destroy();
             if (charts.error) charts.error.destroy();
 
-            charts.judgment = new Chart(document.getElementById('judgmentChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(judgeCounts),
-                    datasets: [{
-                        data: Object.values(judgeCounts),
-                        backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#94a3b8'],
-                        borderWidth: 0,
-                        hoverOffset: 10
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } }
-                }
-            });
+            const ctx1 = document.getElementById('judgmentChart');
+            if(ctx1) {
+                charts.judgment = new Chart(ctx1, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(judgeCounts),
+                        datasets: [{
+                            data: Object.values(judgeCounts),
+                            backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#94a3b8'],
+                            borderWidth: 0,
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } }
+                    }
+                });
+            }
 
-            charts.error = new Chart(document.getElementById('errorChart'), {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(errorCounts),
-                    datasets: [{
-                        label: '件数',
-                        data: Object.values(errorCounts),
-                        backgroundColor: '#6366f1',
-                        borderRadius: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    indexAxis: 'y',
-                    plugins: { legend: { display: false } },
-                    scales: { x: { grid: { display: false } }, y: { grid: { display: false } } }
-                }
-            });
+            const ctx2 = document.getElementById('errorChart');
+            if(ctx2) {
+                charts.error = new Chart(ctx2, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(errorCounts),
+                        datasets: [{
+                            label: '件数',
+                            data: Object.values(errorCounts),
+                            backgroundColor: '#6366f1',
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        plugins: { legend: { display: false } },
+                        scales: { x: { grid: { display: false } }, y: { grid: { display: false } } }
+                    }
+                });
+            }
         }
 
         // Search & Filter
         const searchInput = document.getElementById('searchInput');
         const filterJudge = document.getElementById('filterJudge');
-        const filterError = document.getElementById('filterError');
 
-        [searchInput, filterJudge, filterError].forEach(el => {
+        [searchInput, filterJudge].forEach(el => {
             el.addEventListener('input', applyFilters);
         });
 
         function applyFilters() {
             const query = searchInput.value.toLowerCase();
             const judge = filterJudge.value;
-            const error = filterError.value;
 
             filteredData = fullData.filter(item => {
                 const matchesSearch = item.id.toLowerCase().includes(query) || 
                                      item.query.toLowerCase().includes(query) || 
                                      item.answer.toLowerCase().includes(query);
                 const matchesJudge = judge === 'all' || item.judge === judge;
-                const matchesError = error === 'all' || item.errorType === error;
-                return matchesSearch && matchesJudge && matchesError;
+                return matchesSearch && matchesJudge;
             });
 
             renderTable();
         }
 
         // Modal Logic
-        function openReview(index) {
-            currentEditingIndex = index;
-            const item = filteredData[index];
+        function openReview(id) {
+            const item = fullData.find(d => d.id === id);
+            if(!item) return;
 
+            currentEditingId = id;
             document.getElementById('modalCaseId').textContent = item.id;
             document.getElementById('modalQuery').textContent = item.query;
             document.getElementById('modalAnswer').textContent = item.answer;
@@ -443,15 +476,13 @@
         }
 
         function saveChanges() {
-            if (currentEditingIndex === -1) return;
+            if (!currentEditingId) return;
             
-            const item = filteredData[currentEditingIndex];
-            const originalIndex = fullData.findIndex(d => d.id === item.id);
-            
-            if (originalIndex !== -1) {
-                fullData[originalIndex].action = document.getElementById('modalAction').value;
-                // ここで本来はAPIやLocalStorageへ保存する処理を入れる
-                alert(`${item.id} のメモを更新しました。 (デモ版のため永続化はされません)`);
+            const index = fullData.findIndex(d => d.id === currentEditingId);
+            if (index !== -1) {
+                fullData[index].action = document.getElementById('modalAction').value;
+                saveToLocal();
+                alert("変更を保存しました。");
             }
             
             closeModal();
@@ -459,6 +490,7 @@
         }
 
         function exportData() {
+            if (fullData.length === 0) return alert("出力するデータがありません");
             const csv = Papa.unparse(fullData);
             const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
