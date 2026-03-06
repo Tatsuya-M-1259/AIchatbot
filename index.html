@@ -36,6 +36,15 @@
         .row-partial { border-left: 4px solid #eab308; }
         .row-incorrect { border-left: 4px solid #ef4444; }
         .row-unknown { border-left: 4px solid #94a3b8; }
+        
+        input, textarea, select {
+            transition: all 0.2s;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: #6366f1 !important;
+            ring: 2px;
+            ring-color: #a5b4fc;
+        }
     </style>
 </head>
 <body class="min-h-screen text-slate-800">
@@ -54,6 +63,11 @@
             </div>
             
             <div class="flex items-center gap-2">
+                <button onclick="openNewRecordModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 shadow-sm mr-2">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    新規追加
+                </button>
+
                 <label for="csvUpload" class="cursor-pointer bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 shadow-sm">
                     <i data-lucide="upload" class="w-4 h-4"></i>
                     CSVインポート
@@ -156,16 +170,15 @@
                                     <th class="px-4 py-3 font-semibold text-slate-600">判定</th>
                                     <th class="px-4 py-3 font-semibold text-slate-600">エラー分類</th>
                                     <th class="px-4 py-3 font-semibold text-slate-600">問い合わせ内容</th>
-                                    <th class="px-4 py-3 font-semibold text-slate-600">対応状況</th>
                                     <th class="px-4 py-3 font-semibold text-slate-600 text-right">操作</th>
                                 </tr>
                             </thead>
                             <tbody id="dataTableBody" class="divide-y divide-slate-100">
                                 <tr>
-                                    <td colspan="6" class="px-4 py-12 text-center text-slate-400">
+                                    <td colspan="5" class="px-4 py-12 text-center text-slate-400">
                                         <div class="flex flex-col items-center gap-2">
                                             <i data-lucide="file-text" class="w-8 h-8 opacity-20"></i>
-                                            <p>CSVファイルをインポートしてください</p>
+                                            <p>CSVファイルをインポートするか新規追加してください</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -177,14 +190,16 @@
         </div>
     </main>
 
-    <!-- Review Modal -->
+    <!-- Review Modal (Full Editor) -->
     <div id="reviewModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal()"></div>
-        <div class="relative bg-white w-full max-w-5xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="relative bg-white w-full max-w-6xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
             <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                 <div class="flex items-center gap-3">
-                    <span id="modalCaseId" class="text-xs font-bold bg-indigo-100 text-indigo-700 px-2 py-1 rounded">CASE-XXXX</span>
-                    <h3 class="text-xl font-bold text-slate-800">査読・詳細確認</h3>
+                    <div class="bg-indigo-600 p-1.5 rounded-lg">
+                        <i data-lucide="edit-3" class="text-white w-5 h-5"></i>
+                    </div>
+                    <h3 id="modalTitle" class="text-xl font-bold text-slate-800">案件の編集</h3>
                 </div>
                 <button onclick="closeModal()" class="p-2 hover:bg-slate-200 rounded-full transition-colors">
                     <i data-lucide="x" class="w-6 h-6 text-slate-500"></i>
@@ -192,44 +207,100 @@
             </div>
             
             <div class="p-8 overflow-y-auto grid grid-cols-1 lg:grid-cols-2 gap-8 scroll-hide">
-                <div class="space-y-6">
-                    <div>
-                        <label class="text-xs font-bold text-slate-400 uppercase tracking-tighter block mb-2">ユーザーの問い合わせ内容</label>
-                        <div id="modalQuery" class="p-4 bg-slate-50 border border-slate-100 rounded-xl text-slate-700 whitespace-pre-wrap leading-relaxed"></div>
-                    </div>
-                    <div>
-                        <label class="text-xs font-bold text-slate-400 uppercase tracking-tighter block mb-2">AIの回答</label>
-                        <div id="modalAnswer" class="p-4 bg-indigo-50 border border-indigo-100 rounded-xl text-slate-800 whitespace-pre-wrap leading-relaxed"></div>
-                    </div>
-                </div>
-                
-                <div class="space-y-6">
-                    <div>
-                        <label class="text-xs font-bold text-amber-500 uppercase tracking-tighter block mb-2">理想の回答 (正解案)</label>
-                        <div id="modalIdeal" class="p-4 bg-amber-50 border border-amber-100 rounded-xl text-amber-900 whitespace-pre-wrap leading-relaxed"></div>
-                    </div>
-                    
+                <!-- Left Column: Core Data -->
+                <div class="space-y-5">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="text-xs font-bold text-slate-400 uppercase tracking-tighter block mb-2">判定</label>
-                            <div id="modalJudge" class="font-bold text-lg"></div>
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-tighter block mb-1.5">案件ID</label>
+                            <input type="text" id="edit-id" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 font-mono" placeholder="CASE-XXXX">
                         </div>
                         <div>
-                            <label class="text-xs font-bold text-slate-400 uppercase tracking-tighter block mb-2">エラー分類</label>
-                            <div id="modalError" class="font-bold text-slate-700"></div>
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-tighter block mb-1.5">問い合わせ日時</label>
+                            <input type="text" id="edit-date" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" placeholder="YYYY/MM/DD HH:MM">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-tighter block mb-1.5">セッションID</label>
+                            <input type="text" id="edit-session" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" placeholder="セッション名など">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-tighter block mb-1.5">ユーザーID</label>
+                            <input type="text" id="edit-userId" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" placeholder="ユーザー識別子">
                         </div>
                     </div>
 
                     <div>
-                        <label class="text-xs font-bold text-slate-400 uppercase tracking-tighter block mb-2">改善アクション・メモ</label>
-                        <textarea id="modalAction" class="w-full p-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none h-32 text-slate-700" placeholder="改善が必要なポイントを入力..."></textarea>
+                        <label class="text-xs font-bold text-slate-500 uppercase tracking-tighter block mb-1.5">問い合わせ内容</label>
+                        <textarea id="edit-query" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm leading-relaxed h-32" placeholder="ユーザーが入力した文章を入力..."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-bold text-indigo-600 uppercase tracking-tighter block mb-1.5">AIの回答内容</label>
+                        <textarea id="edit-answer" class="w-full px-4 py-3 border border-indigo-100 bg-indigo-50/30 rounded-xl text-sm leading-relaxed h-48" placeholder="AIが出力した回答を入力..."></textarea>
+                    </div>
+                </div>
+                
+                <!-- Right Column: Analysis & Feedback -->
+                <div class="space-y-5">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-tighter block mb-1.5">正誤判定</label>
+                            <select id="edit-judge" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-bold bg-white">
+                                <option value="◎正解">◎ 正解</option>
+                                <option value="〇一部正解">〇 一部正解</option>
+                                <option value="✕不正解">✕ 不正解</option>
+                                <option value="△判別不能">△ 判別不能</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-tighter block mb-1.5">エラー分類</label>
+                            <select id="edit-errorType" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white">
+                                <option value="なし">なし</option>
+                                <option value="RAG欠如">RAG欠如</option>
+                                <option value="ハルシネーション">ハルシネーション</option>
+                                <option value="指示無視">指示無視</option>
+                                <option value="文脈喪失">文脈喪失</option>
+                                <option value="その他">その他</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-tighter block mb-1.5">所管課</label>
+                            <input type="text" id="edit-dept" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" placeholder="例：観光振興課">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-tighter block mb-1.5">対応状況</label>
+                            <select id="edit-status" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white">
+                                <option value="未着手">未着手</option>
+                                <option value="対応中">対応中</option>
+                                <option value="完了">完了</option>
+                                <option value="保留">保留</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-bold text-emerald-600 uppercase tracking-tighter block mb-1.5">理想の回答 (正解案)</label>
+                        <textarea id="edit-ideal" class="w-full px-4 py-3 border border-emerald-100 bg-emerald-50/30 rounded-xl text-sm leading-relaxed h-32" placeholder="本来AIが回答すべきだった理想的な内容を入力..."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-bold text-amber-600 uppercase tracking-tighter block mb-1.5">改善アクション・メモ</label>
+                        <textarea id="edit-action" class="w-full px-4 py-3 border border-amber-100 bg-amber-50/30 rounded-xl text-sm leading-relaxed h-32" placeholder="プロンプト修正案やナレッジ追加の必要性など..."></textarea>
                     </div>
                 </div>
             </div>
             
             <div class="p-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50">
-                <button onclick="closeModal()" class="px-6 py-2 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-white transition-all">閉じる</button>
-                <button onclick="saveChanges()" class="px-6 py-2 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-all shadow-md shadow-indigo-200">変更を保存</button>
+                <button onclick="closeModal()" class="px-6 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-white transition-all">キャンセル</button>
+                <button onclick="saveChanges()" class="px-8 py-2.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 flex items-center gap-2">
+                    <i data-lucide="save" class="w-4 h-4"></i>
+                    データを保存
+                </button>
             </div>
         </div>
     </div>
@@ -239,9 +310,8 @@
         let fullData = [];
         let filteredData = [];
         let charts = {};
-        let currentEditingId = null;
+        let currentEditingId = null; // nullなら新規作成
 
-        // アイコン初期化
         lucide.createIcons();
 
         // 確実なデータ読み込み関数
@@ -250,17 +320,22 @@
                 const saved = localStorage.getItem(STORAGE_KEY);
                 if (saved) {
                     const parsed = JSON.parse(saved);
-                    if (Array.isArray(parsed) && parsed.length > 0) {
+                    if (Array.isArray(parsed)) {
                         fullData = parsed;
                         filteredData = [...fullData];
                         refreshUI();
-                        document.getElementById('loadStatus').textContent = `SAVED DATA LOADED: ${fullData.length} RECORDS`;
-                        document.getElementById('loadStatus').classList.replace('text-slate-400', 'text-emerald-500');
+                        updateLoadStatus(`SAVED DATA LOADED: ${fullData.length} RECORDS`, 'text-emerald-500');
                     }
                 }
             } catch (e) {
                 console.error("Storage load failed", e);
             }
+        }
+
+        function updateLoadStatus(text, colorClass) {
+            const el = document.getElementById('loadStatus');
+            el.textContent = text;
+            el.className = `text-[10px] font-bold uppercase tracking-widest ${colorClass}`;
         }
 
         // CSVアップロード
@@ -278,8 +353,8 @@
         });
 
         function processNewData(data) {
-            fullData = data.map((item, index) => ({
-                id: item['案件ID'] || `ID-${Date.now()}-${index}`,
+            const newData = data.map((item, index) => ({
+                id: item['案件ID'] || `CASE-${Date.now()}-${index}`,
                 session: item['セッションID'] || '',
                 date: item['問い合わせ日時'] || '',
                 userId: item['ユーザーID'] || '',
@@ -291,34 +366,29 @@
                 ideal: item['理想の回答'] || '',
                 action: item['改善アクション'] || '',
                 status: item['対応状況'] || '未着手',
-                length: parseInt(item['文字数']) || 0
+                length: parseInt(item['文字数']) || (item['回答内容'] ? item['回答内容'].length : 0)
             }));
 
+            fullData = [...newData, ...fullData]; // 新規を上に
             saveToLocal();
             filteredData = [...fullData];
             refreshUI();
-            
-            document.getElementById('loadStatus').textContent = `NEW DATA IMPORTED: ${fullData.length} RECORDS`;
-            document.getElementById('loadStatus').classList.replace('text-slate-400', 'text-indigo-500');
+            updateLoadStatus(`IMPORT SUCCESS: ${newData.length} ADDED`, 'text-indigo-500');
         }
 
         function refreshUI() {
             updateDashboard();
             renderTable();
             initCharts();
+            lucide.createIcons();
         }
 
         function saveToLocal() {
             try {
-                const jsonStr = JSON.stringify(fullData);
-                localStorage.setItem(STORAGE_KEY, jsonStr);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(fullData));
             } catch (e) {
                 console.error("Storage save failed", e);
-                if (e.name === 'QuotaExceededError') {
-                    alert("ブラウザの保存容量がいっぱいです。不要なデータを削除するか、CSVを分割してください。");
-                } else {
-                    alert("データの保存に失敗しました。ブラウザの設定を確認してください。");
-                }
+                alert("保存容量制限により保存できませんでした。不要なデータを削除してください。");
             }
         }
 
@@ -328,8 +398,7 @@
                 fullData = [];
                 filteredData = [];
                 refreshUI();
-                document.getElementById('loadStatus').textContent = "NO DATA LOADED";
-                document.getElementById('loadStatus').className = "text-[10px] text-slate-400 font-bold uppercase tracking-widest";
+                updateLoadStatus("NO DATA LOADED", "text-slate-400");
                 location.reload();
             }
         }
@@ -353,7 +422,7 @@
             tbody.innerHTML = '';
 
             if (filteredData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-12 text-center text-slate-400">表示できるデータがありません</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-12 text-center text-slate-400">表示できるデータがありません</td></tr>`;
                 return;
             }
 
@@ -368,12 +437,11 @@
                         <span class="status-badge ${getBadgeColor(row.judge)}">${row.judge}</span>
                     </td>
                     <td class="px-4 py-4 text-xs font-medium text-slate-600">${row.errorType}</td>
-                    <td class="px-4 py-4 max-w-xs truncate text-slate-600">${row.query}</td>
-                    <td class="px-4 py-4">
-                        <span class="text-xs px-2 py-1 rounded bg-slate-100 border border-slate-200">${row.status}</span>
-                    </td>
+                    <td class="px-4 py-4 max-w-xs truncate text-slate-600 font-medium">${row.query}</td>
                     <td class="px-4 py-4 text-right">
-                        <button class="text-indigo-600 hover:text-indigo-800 font-bold">査読</button>
+                        <button class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1 rounded-md text-xs font-bold transition-all">
+                            編集
+                        </button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -449,17 +517,13 @@
             }
         }
 
-        // 検索・フィルタリング
-        const searchInput = document.getElementById('searchInput');
-        const filterJudge = document.getElementById('filterJudge');
-
-        [searchInput, filterJudge].forEach(el => {
-            el.addEventListener('input', applyFilters);
-        });
+        // 検索
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+        document.getElementById('filterJudge').addEventListener('change', applyFilters);
 
         function applyFilters() {
-            const query = searchInput.value.toLowerCase();
-            const judge = filterJudge.value;
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const judge = document.getElementById('filterJudge').value;
 
             filteredData = fullData.filter(item => {
                 const matchesSearch = item.id.toLowerCase().includes(query) || 
@@ -472,19 +536,48 @@
             renderTable();
         }
 
-        // モーダル
+        // --- モーダル制御 ---
+
+        function openNewRecordModal() {
+            currentEditingId = null;
+            document.getElementById('modalTitle').textContent = "新規案件の登録";
+            
+            // フィールドをクリア
+            document.getElementById('edit-id').value = `CASE-${Date.now().toString().slice(-6)}`;
+            document.getElementById('edit-date').value = new Date().toLocaleString('ja-JP', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+            document.getElementById('edit-session').value = "";
+            document.getElementById('edit-userId').value = "";
+            document.getElementById('edit-query').value = "";
+            document.getElementById('edit-answer').value = "";
+            document.getElementById('edit-judge').value = "△判別不能";
+            document.getElementById('edit-errorType').value = "なし";
+            document.getElementById('edit-dept').value = "";
+            document.getElementById('edit-status').value = "未着手";
+            document.getElementById('edit-ideal').value = "";
+            document.getElementById('edit-action').value = "";
+
+            document.getElementById('reviewModal').classList.remove('hidden');
+        }
+
         function openReview(id) {
             const item = fullData.find(d => d.id === id);
             if(!item) return;
 
             currentEditingId = id;
-            document.getElementById('modalCaseId').textContent = item.id;
-            document.getElementById('modalQuery').textContent = item.query;
-            document.getElementById('modalAnswer').textContent = item.answer;
-            document.getElementById('modalIdeal').textContent = item.ideal || '（未登録）';
-            document.getElementById('modalJudge').innerHTML = `<span class="status-badge ${getBadgeColor(item.judge)} text-base px-4 py-1">${item.judge}</span>`;
-            document.getElementById('modalError').textContent = item.errorType;
-            document.getElementById('modalAction').value = item.action;
+            document.getElementById('modalTitle').textContent = "案件の編集・査読";
+            
+            document.getElementById('edit-id').value = item.id;
+            document.getElementById('edit-date').value = item.date;
+            document.getElementById('edit-session').value = item.session;
+            document.getElementById('edit-userId').value = item.userId;
+            document.getElementById('edit-query').value = item.query;
+            document.getElementById('edit-answer').value = item.answer;
+            document.getElementById('edit-judge').value = item.judge;
+            document.getElementById('edit-errorType').value = item.errorType;
+            document.getElementById('edit-dept').value = item.dept;
+            document.getElementById('edit-status').value = item.status;
+            document.getElementById('edit-ideal').value = item.ideal;
+            document.getElementById('edit-action').value = item.action;
 
             document.getElementById('reviewModal').classList.remove('hidden');
         }
@@ -494,17 +587,41 @@
         }
 
         function saveChanges() {
-            if (!currentEditingId) return;
-            
-            const index = fullData.findIndex(d => d.id === currentEditingId);
-            if (index !== -1) {
-                fullData[index].action = document.getElementById('modalAction').value;
-                saveToLocal();
-                alert("変更を保存しました。");
+            const id = document.getElementById('edit-id').value.trim();
+            if (!id) return alert("案件IDを入力してください");
+
+            const record = {
+                id: id,
+                date: document.getElementById('edit-date').value,
+                session: document.getElementById('edit-session').value,
+                userId: document.getElementById('edit-userId').value,
+                query: document.getElementById('edit-query').value,
+                answer: document.getElementById('edit-answer').value,
+                judge: document.getElementById('edit-judge').value,
+                errorType: document.getElementById('edit-errorType').value,
+                dept: document.getElementById('edit-dept').value,
+                status: document.getElementById('edit-status').value,
+                ideal: document.getElementById('edit-ideal').value,
+                action: document.getElementById('edit-action').value,
+                length: document.getElementById('edit-answer').value.length
+            };
+
+            if (currentEditingId === null) {
+                // 新規追加
+                fullData.unshift(record);
+            } else {
+                // 既存更新
+                const index = fullData.findIndex(d => d.id === currentEditingId);
+                if (index !== -1) {
+                    fullData[index] = record;
+                }
             }
-            
+
+            saveToLocal();
+            filteredData = [...fullData];
+            refreshUI();
             closeModal();
-            renderTable();
+            updateLoadStatus(`DATA SAVED: ${id}`, 'text-emerald-600');
         }
 
         function exportData() {
@@ -521,7 +638,7 @@
             document.body.removeChild(link);
         }
 
-        // 即時実行
+        // 初期化実行
         initializeApp();
     </script>
 </body>
