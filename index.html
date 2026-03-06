@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Answer Analysis & Reviewer (Perfect Local Edition)</title>
+    <title>AI Answer Analysis & Reviewer (Local Edition)</title>
     
     <!-- アイコン・PWA設定 -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E">
     <meta name="apple-mobile-web-app-capable" content="yes">
 
-    <!-- 外部ライブラリ -->
+    <!-- 外部ライブラリ (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -24,7 +24,7 @@
             background-color: #f1f5f9;
         }
 
-        /* テーブルレイアウトの固定：スプレッドシート風 */
+        /* 固定レイアウト設定：スプレッドシートのように各列の幅を固定 */
         .data-table { border-spacing: 0; width: 100%; table-layout: fixed; }
         .data-table th, .data-table td {
             border-right: 1px solid #e2e8f0;
@@ -39,7 +39,7 @@
         .col-id { width: 130px; }
         .col-judge { width: 100px; }
         .col-error { width: 140px; }
-        .col-dept { width: 200px; }
+        .col-dept { width: 180px; }
         .col-query { width: auto; min-width: 400px; }
         .col-action { width: 80px; }
 
@@ -58,38 +58,39 @@
         .row-incorrect { border-left: 5px solid #ef4444 !important; }
         .row-unknown { border-left: 5px solid #94a3b8 !important; }
         
-        .sortable-header { cursor: pointer; user-select: none; transition: background 0.2s; }
+        .sortable-header { cursor: pointer; user-select: none; transition: all 0.2s; }
         .sortable-header:hover { background-color: #f1f5f9; }
-        .sort-active { color: #4f46e5 !important; }
+        .sort-active { color: #4f46e5 !important; background-color: #eef2ff !important; }
 
-        #uiMessage { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4); }
+        #uiMessage { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); }
         .drop-zone { border: 2px dashed #cbd5e1; transition: all 0.2s; }
         .drop-zone.active { border-color: #4f46e5; background-color: #f5f3ff; }
-        
-        /* グラフ用コンテナの完全制御：はみ出しを物理的に防止 */
-        .chart-wrapper {
+
+        /* グラフエリアの絶対固定：下の項目が見えなくなるのを防ぐ */
+        .chart-container {
             position: relative;
-            height: 180px; /* グラフ本体の表示領域を固定 */
+            height: 180px; /* 高さを厳格に固定 */
             width: 100%;
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
         }
     </style>
 </head>
-<body class="min-h-screen text-slate-800 pb-8">
+<body class="min-h-screen text-slate-800">
 
     <!-- Header -->
     <header class="sticky top-0 z-50 w-full bg-white border-b border-slate-200 shadow-sm">
         <div class="max-w-full mx-auto px-4 h-16 flex items-center justify-between">
             <div class="flex items-center gap-4">
-                <div class="bg-indigo-600 p-2 rounded-xl shadow-lg shadow-indigo-200">
-                    <i data-lucide="layout-dashboard" class="text-white w-6 h-6"></i>
+                <div class="bg-indigo-600 p-2 rounded-xl shadow-lg shadow-indigo-100">
+                    <i data-lucide="layout" class="text-white w-6 h-6"></i>
                 </div>
                 <div>
-                    <h1 class="font-black text-lg leading-tight text-slate-900 tracking-tighter">AI正誤管理システム <span class="text-indigo-500 font-medium text-xs ml-2 border border-indigo-100 px-2 py-0.5 rounded-full bg-indigo-50">Local Edition</span></h1>
+                    <h1 class="font-black text-lg leading-tight text-slate-900 tracking-tighter">AI正誤管理システム <span class="text-indigo-500 font-medium text-xs ml-2">Local Mode</span></h1>
                     <div class="flex items-center gap-2 mt-0.5">
-                        <p id="loadStatus" class="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none">SYSTEM STANDBY</p>
+                        <p id="loadStatus" class="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none">SYSTEM READY</p>
                     </div>
                 </div>
             </div>
@@ -98,54 +99,54 @@
                 <button onclick="openNewRecordModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 shadow-md">
                     <i data-lucide="plus-circle" class="w-4 h-4"></i>新規登録
                 </button>
-                <label for="csvUpload" class="cursor-pointer bg-white border-2 border-slate-200 hover:border-indigo-400 text-slate-700 px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 shadow-sm group">
-                    <i data-lucide="upload" class="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform"></i>CSVインポート
+                <label for="csvUpload" class="cursor-pointer bg-white border-2 border-slate-200 hover:border-indigo-400 text-slate-700 px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 shadow-sm">
+                    <i data-lucide="upload" class="w-4 h-4 text-indigo-500"></i>CSVインポート
                 </label>
                 <input type="file" id="csvUpload" class="hidden" accept=".csv">
                 <button onclick="exportData()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 shadow-md">
                     <i data-lucide="download" class="w-4 h-4 text-indigo-300"></i>CSV出力
                 </button>
                 <div class="w-px h-6 bg-slate-200 mx-2"></div>
-                <button onclick="clearStoredData()" class="text-slate-400 hover:text-rose-600 p-2 transition-colors" title="全てのデータを初期化"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                <button onclick="clearStoredData()" class="text-slate-400 hover:text-rose-600 p-2 transition-colors" title="全データ削除"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
             </div>
         </div>
     </header>
 
-    <!-- UI Overlay Messages -->
-    <div id="uiMessage" class="hidden fixed top-24 left-1/2 -translate-x-1/2 z-[300] min-w-[350px] px-8 py-5 rounded-3xl text-sm font-bold flex flex-col items-center gap-3 text-center transition-all bg-slate-900 text-white shadow-2xl scale-95 opacity-0"></div>
+    <!-- 通知オーバーレイ -->
+    <div id="uiMessage" class="hidden fixed top-24 left-1/2 -translate-x-1/2 z-[300] min-w-[320px] px-8 py-5 rounded-3xl text-sm font-bold flex flex-col items-center gap-3 text-center transition-all"></div>
 
     <main class="p-6 space-y-6">
         <!-- KPI Section -->
         <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
             <div class="xl:col-span-3 grid grid-cols-2 gap-4">
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">TOTAL CASES</span>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Total</span>
                     <div class="text-3xl font-black text-slate-900" id="stat-total">0</div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1 text-emerald-500">ACCURACY</span>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Accuracy</span>
                     <div class="text-3xl font-black text-emerald-600" id="stat-accuracy">0%</div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1 text-amber-500">PENDING</span>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Pending</span>
                     <div class="text-3xl font-black text-amber-500" id="stat-pending">0</div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1 text-rose-500">ERRORS</span>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Errors</span>
                     <div class="text-3xl font-black text-rose-500" id="stat-errors">0</div>
                 </div>
             </div>
             
-            <!-- Charts Section (絶対に枠からはみ出さない完全制御) -->
+            <!-- 円グラフ・棒グラフエリア (絶対に突き抜けない設定) -->
             <div class="xl:col-span-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-72">
-                <h2 class="text-xs font-black text-slate-500 mb-4 flex items-center gap-2 uppercase tracking-tighter"><i data-lucide="pie-chart" class="w-4 h-4 text-indigo-500"></i>判定内訳 (Judge Stats)</h2>
-                <div class="chart-wrapper">
+                <h2 class="text-xs font-black text-slate-500 mb-4 flex items-center gap-2 uppercase tracking-tighter"><i data-lucide="pie-chart" class="w-4 h-4"></i>判定内訳</h2>
+                <div class="chart-container">
                     <canvas id="judgmentChart"></canvas>
                 </div>
             </div>
             <div class="xl:col-span-5 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-72">
-                <h2 class="text-xs font-black text-slate-500 mb-4 flex items-center gap-2 uppercase tracking-tighter"><i data-lucide="bar-chart-3" class="w-4 h-4 text-rose-500"></i>エラー原因トップ (Error Analysis)</h2>
-                <div class="chart-wrapper">
+                <h2 class="text-xs font-black text-slate-500 mb-4 flex items-center gap-2 uppercase tracking-tighter"><i data-lucide="bar-chart-3" class="w-4 h-4"></i>主要エラー分類</h2>
+                <div class="chart-container">
                     <canvas id="errorChart"></canvas>
                 </div>
             </div>
@@ -157,54 +158,48 @@
                 <div class="flex items-center gap-4">
                     <div class="relative">
                         <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
-                        <input type="text" id="searchInput" placeholder="ID・内容・課名をリアルタイム検索..." class="pl-10 pr-4 py-2 text-sm border-2 border-slate-200 rounded-xl w-80 outline-none focus:border-indigo-500 transition-all font-medium">
+                        <input type="text" id="searchInput" placeholder="自由検索 (ID, 内容, 課名)..." class="pl-10 pr-4 py-2 text-sm border-2 border-slate-200 rounded-xl w-80 outline-none focus:border-indigo-500 transition-all">
                     </div>
                     <div class="h-6 w-px bg-slate-300"></div>
-                    <div class="flex items-center gap-2">
-                        <select id="filterJudge" class="text-xs border-2 border-slate-200 rounded-xl px-3 py-2 bg-white outline-none focus:border-indigo-500 font-bold text-slate-600">
-                            <option value="all">すべての判定</option>
-                            <option value="◎正解">◎ 正解</option>
-                            <option value="〇一部正解">〇 一部正解</option>
-                            <option value="✕不正解">✕ 不正解</option>
-                            <option value="△判別不能">△ 判別不能</option>
-                        </select>
-                        <select id="filterDept" class="text-xs border-2 border-slate-200 rounded-xl px-3 py-2 bg-white outline-none focus:border-indigo-500 font-bold text-slate-600 min-w-[180px]">
-                            <option value="all">すべての所管課</option>
-                        </select>
-                    </div>
+                    <select id="filterJudge" class="text-sm border-2 border-slate-200 rounded-xl px-3 py-2 bg-white outline-none focus:border-indigo-500 font-bold text-slate-600">
+                        <option value="all">すべての判定</option>
+                        <option value="◎正解">◎ 正解</option>
+                        <option value="〇一部正解">〇 一部正解</option>
+                        <option value="✕不正解">✕ 不正解</option>
+                        <option value="△判別不能">△ 判別不能</option>
+                    </select>
+                    <select id="filterDept" class="text-sm border-2 border-slate-200 rounded-xl px-3 py-2 bg-white outline-none focus:border-indigo-500 font-bold text-slate-600 min-w-[180px]">
+                        <option value="all">すべての所管課</option>
+                    </select>
                 </div>
-                <div class="text-xs font-black text-slate-400 tracking-widest"><span id="recordCount" class="text-indigo-600 text-lg mr-1">0</span> RECORDS</div>
+                <div class="text-xs font-black text-slate-400 tracking-widest"><span id="recordCount" class="text-indigo-600 text-lg mr-1 font-black">0</span> RECORDS</div>
             </div>
             
-            <!-- Main Grid Table -->
+            <!-- Grid -->
             <div class="overflow-auto flex-grow relative bg-slate-50/20">
                 <table class="data-table hidden" id="mainDataTable">
                     <thead>
                         <tr>
                             <th class="col-id text-left sortable-header" id="th-id" onclick="toggleSort('id')">案件ID <i data-lucide="chevrons-up-down" class="w-3 h-3 inline ml-1"></i></th>
-                            <th class="col-judge text-left">判定 (Status)</th>
+                            <th class="col-judge text-left">判定</th>
                             <th class="col-error text-left">エラー分類</th>
                             <th class="col-dept text-left sortable-header" id="th-dept1" onclick="toggleSort('dept1')">所管課 <i data-lucide="chevrons-up-down" class="w-3 h-3 inline ml-1"></i></th>
-                            <th class="col-query text-left">問い合わせ内容</th>
+                            <th class="col-query text-left">内容</th>
                             <th class="col-action text-center">操作</th>
                         </tr>
                     </thead>
                     <tbody id="dataTableBody"></tbody>
                 </table>
 
-                <!-- Initial Empty State / Drop Zone -->
+                <!-- Initial Empty State -->
                 <div id="emptyState" class="absolute inset-0 flex items-center justify-center p-10 cursor-pointer" onclick="document.getElementById('csvUpload').click()">
-                    <div class="drop-zone p-16 rounded-[40px] w-full max-w-xl flex flex-col items-center gap-6 text-center shadow-inner group">
-                        <div class="bg-indigo-600 p-6 rounded-3xl text-white shadow-2xl shadow-indigo-200 group-hover:scale-110 transition-transform duration-300">
+                    <div class="drop-zone p-16 rounded-[40px] w-full max-w-xl flex flex-col items-center gap-6 text-center shadow-inner">
+                        <div class="bg-indigo-600 p-6 rounded-3xl text-white shadow-2xl shadow-indigo-200">
                             <i data-lucide="file-spreadsheet" class="w-12 h-12"></i>
                         </div>
                         <div>
-                            <h3 class="font-black text-slate-800 text-2xl tracking-tighter">CSVデータをインポートして開始</h3>
-                            <p class="text-slate-500 mt-2 font-medium">ここをクリックするか、CSVファイルをこの枠内にドロップしてください</p>
-                        </div>
-                        <div class="flex gap-3">
-                            <span class="px-4 py-1.5 bg-white border border-slate-200 text-[10px] font-black rounded-full text-slate-400">LOCAL STORAGE SAFE</span>
-                            <span class="px-4 py-1.5 bg-white border border-slate-200 text-[10px] font-black rounded-full text-slate-400">SPREADSHEET READY</span>
+                            <h3 class="font-black text-slate-800 text-2xl tracking-tighter">CSVをインポートして開始</h3>
+                            <p class="text-slate-500 mt-2 font-medium">ここをクリックするか、CSVファイルをドロップしてください</p>
                         </div>
                     </div>
                 </div>
@@ -214,56 +209,59 @@
 
     <!-- Review Modal -->
     <div id="reviewModal" class="fixed inset-0 z-[200] hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onclick="closeModal()"></div>
-        <div class="relative bg-white w-full max-w-6xl rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[94vh]">
+        <div class="absolute inset-0 bg-slate-900/70 backdrop-blur-md" onclick="closeModal()"></div>
+        <div class="relative bg-white w-full max-w-6xl rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
             <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-white">
                 <div class="flex items-center gap-4">
-                    <div class="bg-indigo-600 p-2 rounded-2xl text-white shadow-lg shadow-indigo-100"><i data-lucide="edit-2" class="w-6 h-6"></i></div>
+                    <div class="bg-indigo-600 p-2 rounded-2xl text-white"><i data-lucide="edit-2" class="w-6 h-6"></i></div>
                     <div>
                         <h3 id="modalTitle" class="text-xl font-black text-slate-800">査読・案件編集</h3>
                         <p id="modalCaseIdDisplay" class="text-xs font-bold text-indigo-500 tracking-widest mt-0.5 uppercase">CASE-XXXX</p>
                     </div>
                 </div>
-                <button onclick="closeModal()" class="p-3 hover:bg-slate-100 rounded-full transition-all group"><i data-lucide="x" class="w-7 h-7 text-slate-400 group-hover:rotate-90 transition-transform"></i></button>
+                <button onclick="closeModal()" class="p-3 hover:bg-slate-100 rounded-full transition-all"><i data-lucide="x" class="w-7 h-7 text-slate-400"></i></button>
             </div>
-            <!-- Modal Body -->
             <div class="p-8 overflow-y-auto grid grid-cols-1 lg:grid-cols-2 gap-8 bg-slate-50/50">
                 <div class="space-y-6">
                     <div class="grid grid-cols-2 gap-4">
-                        <div><label class="text-[10px] font-black text-slate-400 block mb-1.5 uppercase tracking-widest">案件ID</label><input type="text" id="edit-id" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-sm font-mono bg-slate-50 focus:bg-white focus:border-indigo-500 transition-all outline-none"></div>
-                        <div><label class="text-[10px] font-black text-slate-400 block mb-1.5 uppercase tracking-widest">問い合わせ日時</label><input type="text" id="edit-date" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:border-indigo-500 outline-none transition-all"></div>
+                        <div><label class="text-[10px] font-black text-slate-400 block mb-1.5 uppercase tracking-widest">案件ID</label><input type="text" id="edit-id" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-sm font-mono shadow-sm"></div>
+                        <div><label class="text-[10px] font-black text-slate-400 block mb-1.5 uppercase tracking-widest">問い合わせ日時</label><input type="text" id="edit-date" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-sm shadow-sm"></div>
                     </div>
-                    <div><label class="text-[10px] font-black text-slate-400 block mb-1.5 uppercase tracking-widest">問い合わせ内容</label><textarea id="edit-query" class="w-full px-5 py-4 border-2 border-slate-200 rounded-2xl text-sm h-40 bg-white leading-relaxed focus:border-indigo-500 outline-none transition-all"></textarea></div>
-                    <div><label class="text-[10px] font-black text-indigo-500 block mb-1.5 uppercase tracking-widest">AI回答内容</label><textarea id="edit-answer" class="w-full px-5 py-4 border-2 border-indigo-100 bg-indigo-50/30 rounded-2xl text-sm h-56 leading-relaxed focus:border-indigo-500 outline-none transition-all"></textarea></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="text-[10px] font-black text-slate-400 block mb-1.5 uppercase tracking-widest">セッションID</label><input type="text" id="edit-session" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-sm shadow-sm"></div>
+                        <div><label class="text-[10px] font-black text-slate-400 block mb-1.5 uppercase tracking-widest">ユーザーID</label><input type="text" id="edit-userId" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-sm shadow-sm"></div>
+                    </div>
+                    <div><label class="text-[10px] font-black text-slate-400 block mb-1.5 uppercase tracking-widest">内容</label><textarea id="edit-query" class="w-full px-5 py-4 border-2 border-slate-200 rounded-2xl text-sm h-40 bg-white leading-relaxed shadow-sm"></textarea></div>
+                    <div><label class="text-[10px] font-black text-indigo-500 block mb-1.5 uppercase tracking-widest">AI回答</label><textarea id="edit-answer" class="w-full px-5 py-4 border-2 border-indigo-100 bg-indigo-50/30 rounded-2xl text-sm h-56 leading-relaxed shadow-sm"></textarea></div>
                 </div>
                 <div class="space-y-6">
                     <div class="grid grid-cols-2 gap-4">
-                        <div class="p-4 bg-white rounded-2xl border-2 border-slate-100 shadow-sm"><label class="text-[10px] font-black text-slate-400 block mb-2 underline decoration-indigo-300 uppercase tracking-widest">Judgment</label><select id="edit-judge" class="w-full px-2 py-2 border-2 border-slate-200 rounded-xl text-sm font-black bg-white focus:border-indigo-500 outline-none"><option value="◎正解">◎ 正解</option><option value="〇一部正解">〇 一部正解</option><option value="✕不正解">✕ 不正解</option><option value="△判別不能">△ 判別不能</option></select></div>
-                        <div class="p-4 bg-white rounded-2xl border-2 border-slate-100 shadow-sm"><label class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-widest">Error Type</label><select id="edit-errorType" class="w-full px-2 py-2 border-2 border-slate-200 rounded-xl text-sm bg-white font-bold focus:border-indigo-500 outline-none"><option value="なし">なし</option><option value="RAG欠如">RAG欠如</option><option value="ハルシネーション">ハルシネーション</option><option value="指示無視">指示無視</option><option value="文脈喪失">文脈喪失</option><option value="その他">その他</option></select></div>
+                        <div class="p-4 bg-white rounded-2xl border-2 border-slate-100 shadow-sm"><label class="text-[10px] font-black text-slate-400 block mb-2 underline decoration-indigo-300 uppercase tracking-widest">Judgment</label><select id="edit-judge" class="w-full px-2 py-2 border-2 border-slate-200 rounded-xl text-sm font-black bg-white focus:border-indigo-400 outline-none"><option value="◎正解">◎ 正解</option><option value="〇一部正解">〇 一部正解</option><option value="✕不正解">✕ 不正解</option><option value="△判別不能">△ 判別不能</option></select></div>
+                        <div class="p-4 bg-white rounded-2xl border-2 border-slate-100 shadow-sm"><label class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-widest">Error Type</label><select id="edit-errorType" class="w-full px-2 py-2 border-2 border-slate-200 rounded-xl text-sm bg-white font-bold"><option value="なし">なし</option><option value="RAG欠如">RAG欠如</option><option value="ハルシネーション">ハルシネーション</option><option value="指示無視">指示無視</option><option value="文脈喪失">文脈喪失</option><option value="その他">その他</option></select></div>
                     </div>
-                    <div class="p-4 bg-white rounded-2xl border-2 border-slate-100 shadow-sm"><label class="text-[10px] font-black text-slate-400 block mb-3 uppercase tracking-widest">所管課（最大3枠まで自動分割）</label><div class="grid grid-cols-3 gap-3"><input type="text" id="edit-dept1" class="px-3 py-2 border-2 border-slate-200 rounded-xl text-xs focus:border-indigo-500 outline-none" placeholder="課1"><input type="text" id="edit-dept2" class="px-3 py-2 border-2 border-slate-200 rounded-xl text-xs focus:border-indigo-500 outline-none" placeholder="課2"><input type="text" id="edit-dept3" class="px-3 py-2 border-2 border-slate-200 rounded-xl text-xs focus:border-indigo-500 outline-none" placeholder="課3"></div></div>
-                    <div class="p-4 bg-white rounded-2xl border-2 border-slate-100 shadow-sm"><label class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-widest">対応状況 (Status)</label><select id="edit-status" class="w-full px-2 py-2 border-2 border-slate-200 rounded-xl text-sm bg-white focus:border-indigo-500 outline-none"><option value="未着手">未着手</option><option value="対応中">対応中</option><option value="完了">完了</option><option value="保留">保留</option></select></div>
-                    <div><label class="text-[10px] font-black text-emerald-600 block mb-1.5 uppercase tracking-widest underline decoration-emerald-300">Ideal Answer (Ideal Knowledge)</label><textarea id="edit-ideal" class="w-full px-5 py-4 border-2 border-emerald-100 bg-emerald-50/20 rounded-2xl text-sm h-36 leading-relaxed focus:border-emerald-500 outline-none transition-all"></textarea></div>
-                    <div><label class="text-[10px] font-black text-amber-600 block mb-1.5 uppercase tracking-widest underline decoration-amber-300">Analysis Memo</label><textarea id="edit-action" class="w-full px-5 py-4 border-2 border-amber-100 bg-amber-50/20 rounded-2xl text-sm h-36 leading-relaxed focus:border-amber-500 outline-none transition-all"></textarea></div>
+                    <div class="p-4 bg-white rounded-2xl border-2 border-slate-100 shadow-sm"><label class="text-[10px] font-black text-slate-400 block mb-3 uppercase tracking-widest">所管課（最大3枠まで自動分割）</label><div class="grid grid-cols-3 gap-3"><input type="text" id="edit-dept1" class="px-3 py-2 border-2 border-slate-200 rounded-xl text-xs" placeholder="課1"><input type="text" id="edit-dept2" class="px-3 py-2 border-2 border-slate-200 rounded-xl text-xs" placeholder="課2"><input type="text" id="edit-dept3" class="px-3 py-2 border-2 border-slate-200 rounded-xl text-xs" placeholder="課3"></div></div>
+                    <div class="p-4 bg-white rounded-2xl border-2 border-slate-100 shadow-sm"><label class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-widest">Status</label><select id="edit-status" class="w-full px-2 py-2 border-2 border-slate-200 rounded-xl text-sm bg-white"><option value="未着手">未着手</option><option value="対応中">対応中</option><option value="完了">完了</option><option value="保留">保留</option></select></div>
+                    <div><label class="text-[10px] font-black text-emerald-600 block mb-1.5 uppercase tracking-widest underline decoration-emerald-300">Ideal Answer</label><textarea id="edit-ideal" class="w-full px-5 py-4 border-2 border-emerald-100 bg-emerald-50/20 rounded-2xl text-sm h-36 leading-relaxed shadow-sm"></textarea></div>
+                    <div><label class="text-[10px] font-black text-amber-600 block mb-1.5 uppercase tracking-widest underline decoration-amber-300">Analysis Note</label><textarea id="edit-action" class="w-full px-5 py-4 border-2 border-amber-100 bg-amber-50/20 rounded-2xl text-sm h-36 leading-relaxed shadow-sm"></textarea></div>
                 </div>
             </div>
-            <!-- Footer -->
             <div class="p-6 border-t border-slate-100 flex justify-end gap-3 bg-white">
                 <button onclick="closeModal()" class="px-8 py-3 rounded-2xl border-2 border-slate-200 text-slate-600 font-black hover:bg-slate-50 transition-all text-sm">キャンセル</button>
-                <button onclick="saveChanges()" id="saveBtn" class="px-12 py-3 rounded-2xl bg-indigo-600 text-white font-black hover:bg-indigo-700 shadow-2xl shadow-indigo-200 flex items-center gap-2 text-sm"><i data-lucide="save" class="w-4 h-4"></i>ローカルに保存</button>
+                <button onclick="saveChanges()" id="saveBtn" class="px-12 py-3 rounded-2xl bg-indigo-600 text-white font-black hover:bg-indigo-700 shadow-2xl shadow-indigo-200 flex items-center gap-2 text-sm"><i data-lucide="save" class="w-4 h-4"></i>データを保存</button>
             </div>
         </div>
     </div>
 
-    <!-- Script Logic -->
+    <!-- Script Section -->
     <script>
-        const STORAGE_KEY = 'ai_answer_review_v_local_final_perfect';
+        const STORAGE_KEY = 'ai_answer_review_v_local_final_v2';
         let fullData = [];
         let filteredData = [];
         let sortConfig = { key: 'id', direction: 'desc' };
         let charts = {};
+        let currentEditingId = null; // 現在編集中の案件IDを保持
 
-        // --- 初期化 ---
+        // 起動時初期化
         window.onload = () => {
             lucide.createIcons();
             const saved = localStorage.getItem(STORAGE_KEY);
@@ -272,7 +270,6 @@
                     fullData = JSON.parse(saved);
                     updateDeptFilterList();
                     applyFilters();
-                    showMessage("<i data-lucide='check-circle' class='w-4 h-4'></i> 前回のデータを読み込みました");
                 } catch(e) { console.error(e); }
             }
             refreshUI();
@@ -281,20 +278,12 @@
         function showMessage(text, isError = false) {
             const el = document.getElementById('uiMessage');
             el.innerHTML = text;
+            el.className = `fixed top-24 left-1/2 -translate-x-1/2 z-[300] min-w-[320px] px-8 py-5 rounded-3xl shadow-2xl text-sm font-bold flex flex-col items-center gap-3 text-center transition-all ${isError ? 'bg-rose-600 text-white' : 'bg-slate-900 text-white'}`;
             el.classList.remove('hidden');
-            setTimeout(() => {
-                el.style.opacity = '1';
-                el.style.transform = 'translate(-50%, 0) scale(1)';
-            }, 10);
-            
-            setTimeout(() => {
-                el.style.opacity = '0';
-                el.style.transform = 'translate(-50%, -20px) scale(0.95)';
-                setTimeout(() => el.classList.add('hidden'), 300);
-            }, 4000);
+            setTimeout(() => el.classList.add('hidden'), 4000);
         }
 
-        // --- CSVインポートロジック (項目名補正機能付き) ---
+        // CSVインポート処理
         document.getElementById('csvUpload').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -312,21 +301,21 @@
                             for(let opt of options) if (item[opt] !== undefined) return item[opt];
                             return '';
                         };
-                        const rawDepts = (get(['所管課', 'dept', 'department']) || '').split(/[\n,]/);
+                        const rawDepts = (get(['所管課', 'dept']) || '').split(/[\n,]/);
                         return {
-                            id: (get(['案件ID', 'id', '案件id']) || `CASE-${Date.now()}-${index}`).toString().trim(),
+                            id: (get(['案件ID', 'id']) || `CASE-${Date.now()}-${index}`).toString().trim(),
                             session: get(['セッションID', 'session']),
                             date: get(['問い合わせ日時', 'date']),
                             userId: get(['ユーザーID', 'userId']),
-                            query: get(['問い合わせ内容', 'query', '問い合わせ']),
-                            answer: get(['回答内容', 'answer', 'AI回答']),
+                            query: get(['問い合わせ内容', 'query']),
+                            answer: get(['回答内容', 'answer']),
                             dept1: rawDepts[0]?.trim() || '',
                             dept2: rawDepts[1]?.trim() || '',
                             dept3: rawDepts[2]?.trim() || '',
                             judge: get(['正誤判定', 'judge']) || '△判別不能',
                             errorType: get(['エラー分類', 'errorType']) || 'なし',
                             ideal: get(['理想の回答', 'ideal']),
-                            action: get(['改善アクション', 'action', '改善案']),
+                            action: get(['改善アクション', 'action']),
                             status: get(['対応状況', 'status']) || '未着手'
                         };
                     });
@@ -334,13 +323,13 @@
                     saveToLocal();
                     updateDeptFilterList();
                     applyFilters();
-                    showMessage(`<i data-lucide='download' class='w-4 h-4'></i> ${newData.length} 件インポート完了`);
+                    showMessage(`${newData.length} 件のインポートが完了しました`);
                 }
             });
             e.target.value = "";
         });
 
-        // --- フィルタ & ソート ---
+        // 共通ロジック
         function applyFilters() {
             const q = document.getElementById('searchInput').value.toLowerCase();
             const j = document.getElementById('filterJudge').value;
@@ -348,20 +337,23 @@
 
             filteredData = fullData.filter(item => {
                 const deptsAll = `${item.dept1} ${item.dept2} ${item.dept3}`.toLowerCase();
-                const matchSearch = item.id.toLowerCase().includes(q) || 
-                                   item.query.toLowerCase().includes(q) || 
-                                   item.answer.toLowerCase().includes(q) || 
+                const matchSearch = String(item.id).toLowerCase().includes(q) || 
+                                   String(item.query).toLowerCase().includes(q) || 
+                                   String(item.answer).toLowerCase().includes(q) || 
                                    deptsAll.includes(q);
                 const matchJudge = (j === 'all' || item.judge === j);
                 const matchDept = (d === 'all' || item.dept1 === d || item.dept2 === d || item.dept3 === d);
                 return matchSearch && matchJudge && matchDept;
             });
 
+            // ソート適用
             if (sortConfig.key) {
                 filteredData.sort((a, b) => {
-                    const vA = (a[sortConfig.key] || '').toString();
-                    const vB = (b[sortConfig.key] || '').toString();
-                    return sortConfig.direction === 'asc' ? vA.localeCompare(vB, undefined, {numeric: true}) : vB.localeCompare(vA, undefined, {numeric: true});
+                    const vA = String(a[sortConfig.key] || '');
+                    const vB = String(b[sortConfig.key] || '');
+                    return sortConfig.direction === 'asc' 
+                        ? vA.localeCompare(vB, undefined, {numeric: true}) 
+                        : vB.localeCompare(vA, undefined, {numeric: true});
                 });
             }
             refreshUI();
@@ -376,8 +368,8 @@
             document.getElementById('emptyState').classList.toggle('hidden', fullData.length > 0);
             document.getElementById('recordCount').textContent = filteredData.length;
             
-            // ソートアイコンの色更新
-            document.querySelectorAll('.sortable-header').forEach(h => h.classList.remove('sort-active'));
+            // ソートヘッダーの色調整
+            document.querySelectorAll('.sortable-header').forEach(el => el.classList.remove('sort-active'));
             const activeHeader = document.getElementById(`th-${sortConfig.key === 'dept1' ? 'dept1' : sortConfig.key}`);
             if (activeHeader) activeHeader.classList.add('sort-active');
         }
@@ -393,7 +385,6 @@
             document.getElementById('stat-accuracy').textContent = `${accuracy}%`;
             document.getElementById('stat-pending').textContent = pending;
             document.getElementById('stat-errors').textContent = errors;
-            document.getElementById('loadStatus').textContent = total > 0 ? "DATA LOADED" : "SYSTEM STANDBY";
         }
 
         function renderTable() {
@@ -401,16 +392,16 @@
             tbody.innerHTML = '';
             filteredData.forEach((row) => {
                 const tr = document.createElement('tr');
-                tr.className = `hover:bg-indigo-50/50 cursor-pointer text-[12px] border-l-4 transition-all duration-75 ${getJudgeClass(row.judge)}`;
+                tr.className = `hover:bg-indigo-50/50 cursor-pointer text-[12px] border-l-4 transition-all ${getJudgeClass(row.judge)}`;
                 tr.onclick = () => openReview(row.id);
                 const depts = [row.dept1, row.dept2, row.dept3].filter(Boolean).join(', ');
                 tr.innerHTML = `
                     <td class="col-id font-mono text-slate-500 font-bold">${row.id}</td>
                     <td class="col-judge"><span class="status-badge ${getBadgeColor(row.judge)}">${row.judge}</span></td>
                     <td class="col-error text-slate-600 font-bold">${row.errorType}</td>
-                    <td class="col-dept text-slate-500 italic">${depts || '未設定'}</td>
+                    <td class="col-dept text-slate-500 italic">${depts || '-'}</td>
                     <td class="col-query text-slate-800 font-bold">${row.query}</td>
-                    <td class="col-action text-center"><button class="bg-white border border-slate-200 hover:bg-indigo-600 hover:text-white px-2 py-1 rounded font-black transition-all shadow-sm">EDIT</button></td>
+                    <td class="col-action text-center"><button class="bg-white border border-slate-200 hover:bg-indigo-600 hover:text-white px-2 py-1 rounded font-black transition-all">EDIT</button></td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -419,7 +410,7 @@
         function getJudgeClass(j) { return j==='◎正解' ? 'row-correct' : j==='〇一部正解' ? 'row-partial' : j==='✕不正解' ? 'row-incorrect' : 'row-unknown'; }
         function getBadgeColor(j) { return j==='◎正解' ? 'bg-emerald-100 text-emerald-700' : j==='〇一部正解' ? 'bg-amber-100 text-amber-700' : j==='✕不正解' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-500'; }
 
-        // --- グラフ表示：絶対に突き抜けない設定 ---
+        // グラフ描画：コンテナ内に100%収める
         function initCharts() {
             const judgeCounts = {}; fullData.forEach(d => judgeCounts[d.judge] = (judgeCounts[d.judge] || 0) + 1);
             const errorCounts = {}; fullData.filter(d => d.errorType && d.errorType !== 'なし').forEach(d => errorCounts[d.errorType] = (errorCounts[d.errorType] || 0) + 1);
@@ -433,23 +424,16 @@
                     type: 'doughnut', 
                     data: { 
                         labels: Object.keys(judgeCounts), 
-                        datasets: [{ data: Object.values(judgeCounts), backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#94a3b8'], borderWidth: 0, hoverOffset: 4 }] 
+                        datasets: [{ data: Object.values(judgeCounts), backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#94a3b8'], borderWidth: 0, hoverOffset: 5 }] 
                     }, 
                     options: { 
                         responsive: true, 
-                        maintainAspectRatio: false, // コンテナの高さ180pxに強制的に合わせる
-                        cutout: '60%',
+                        maintainAspectRatio: false, // 高さをコンテナ(180px)に強制
                         plugins: { 
                             legend: { 
-                                position: 'right', // 横並びにして高さを節約
-                                labels: { 
-                                    usePointStyle: true, 
-                                    boxWidth: 8, 
-                                    font: { size: 9, weight: 'bold' },
-                                    padding: 10
-                                } 
-                            },
-                            tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', padding: 10, cornerRadius: 8 }
+                                position: 'right', // 横並びで高さを節約
+                                labels: { usePointStyle: true, boxWidth: 6, font: { size: 9, weight: 'bold' }, padding: 8 } 
+                            } 
                         } 
                     } 
                 });
@@ -460,7 +444,7 @@
                     type: 'bar', 
                     data: { 
                         labels: Object.keys(errorCounts), 
-                        datasets: [{ label: 'Count', data: Object.values(errorCounts), backgroundColor: '#6366f1', borderRadius: 6 }] 
+                        datasets: [{ label: '件数', data: Object.values(errorCounts), backgroundColor: '#6366f1', borderRadius: 4 }] 
                     }, 
                     options: { 
                         responsive: true, 
@@ -476,11 +460,57 @@
             }
         }
 
-        // --- モーダル・保存 ---
+        // 案件の保存（不具合修正版）
+        window.saveChanges = () => {
+            const id = document.getElementById('edit-id').value.trim();
+            if (!id) return alert("IDは必須です");
+
+            // フィールドからデータを収集
+            const record = {
+                id: id,
+                date: document.getElementById('edit-date').value,
+                session: document.getElementById('edit-session').value,
+                userId: document.getElementById('edit-userId').value,
+                query: document.getElementById('edit-query').value,
+                answer: document.getElementById('edit-answer').value,
+                judge: document.getElementById('edit-judge').value,
+                errorType: document.getElementById('edit-errorType').value,
+                dept1: document.getElementById('edit-dept1').value.trim(),
+                dept2: document.getElementById('edit-dept2').value.trim(),
+                dept3: document.getElementById('edit-dept3').value.trim(),
+                status: document.getElementById('edit-status').value,
+                ideal: document.getElementById('edit-ideal').value,
+                action: document.getElementById('edit-action').value
+            };
+
+            if (currentEditingId === null) {
+                // 新規登録
+                fullData.unshift(record);
+            } else {
+                // 既存編集：型不一致を避けるため文字列として比較
+                const idx = fullData.findIndex(d => String(d.id) === String(currentEditingId));
+                if (idx !== -1) {
+                    fullData[idx] = record;
+                } else {
+                    // IDが変更されていた場合などは新規扱いとして追加
+                    fullData.unshift(record);
+                }
+            }
+
+            saveToLocal();
+            updateDeptFilterList();
+            applyFilters(); // ここで一覧を再描画
+            closeModal();
+            showMessage("<i data-lucide='save' class='w-4 h-4'></i> 変更を正常に保存しました");
+            currentEditingId = null; // リセット
+        };
+
+        function saveToLocal() { localStorage.setItem(STORAGE_KEY, JSON.stringify(fullData)); }
+
         window.openNewRecordModal = () => {
             currentEditingId = null;
             document.getElementById('modalTitle').textContent = "新規案件登録";
-            document.getElementById('modalCaseIdDisplay').textContent = "NEW LOCAL ENTRY";
+            document.getElementById('modalCaseIdDisplay').textContent = "NEW ENTRY";
             ['edit-id', 'edit-session', 'edit-userId', 'edit-query', 'edit-answer', 'edit-dept1', 'edit-dept2', 'edit-dept3', 'edit-ideal', 'edit-action'].forEach(id => document.getElementById(id).value = "");
             document.getElementById('edit-id').value = `CASE-${Date.now().toString().slice(-6)}`;
             document.getElementById('edit-date').value = new Date().toLocaleString('ja-JP');
@@ -491,35 +521,26 @@
         };
 
         window.openReview = (id) => {
-            const item = fullData.find(d => d.id === id); if(!item) return;
+            // 文字列・数値のゆらぎを吸収して検索
+            const item = fullData.find(d => String(d.id) === String(id));
+            if(!item) return;
+
             currentEditingId = id;
-            document.getElementById('modalTitle').textContent = "査読・案件編集";
+            document.getElementById('modalTitle').textContent = "査読・データ編集";
             document.getElementById('modalCaseIdDisplay').textContent = item.id;
+            
             ['id', 'session', 'date', 'userId', 'query', 'answer', 'dept1', 'dept2', 'dept3', 'judge', 'errorType', 'status', 'ideal', 'action'].forEach(k => {
-                const el = document.getElementById(`edit-${k}`); if (el) el.value = item[k] || '';
+                const el = document.getElementById(`edit-${k}`);
+                if (el) el.value = item[k] || '';
             });
             document.getElementById('reviewModal').classList.remove('hidden');
         };
 
         window.closeModal = () => document.getElementById('reviewModal').classList.add('hidden');
 
-        window.saveChanges = () => {
-            const id = document.getElementById('edit-id').value.trim();
-            if (!id) return alert("IDは必須です");
-            const record = { id };
-            ['date', 'session', 'userId', 'query', 'answer', 'judge', 'errorType', 'dept1', 'dept2', 'dept3', 'status', 'ideal', 'action'].forEach(k => {
-                record[k] = document.getElementById(`edit-${k}`).value;
-            });
-            if (currentEditingId === null) fullData.unshift(record);
-            else { const idx = fullData.findIndex(d => d.id === currentEditingId); if(idx !== -1) fullData[idx] = record; }
-            saveToLocal(); updateDeptFilterList(); applyFilters(); closeModal(); showMessage("<i data-lucide='save' class='w-4 h-4'></i> 変更を保存しました");
-        };
-
-        function saveToLocal() { localStorage.setItem(STORAGE_KEY, JSON.stringify(fullData)); }
-
         window.clearStoredData = () => {
-            if (!confirm("ブラウザに保存されている全てのデータを完全に消去します。本当によろしいですか？")) return;
-            localStorage.removeItem(STORAGE_KEY); fullData = []; applyFilters(); showMessage("<i data-lucide='trash' class='w-4 h-4'></i> 全データを削除しました");
+            if (!confirm("全てのデータを消去します。本当によろしいですか？")) return;
+            localStorage.removeItem(STORAGE_KEY); fullData = []; applyFilters(); showMessage("全消去しました");
         };
 
         window.exportData = () => {
@@ -531,7 +552,6 @@
             const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
             link.download = `AI分析結果_${new Date().toISOString().split('T')[0]}.csv`; link.click();
-            showMessage("<i data-lucide='file-down' class='w-4 h-4'></i> CSVを出力しました");
         };
 
         window.toggleSort = (key) => {
@@ -550,7 +570,7 @@
             if (depts.has(cur)) sel.value = cur;
         }
 
-        // --- イベント監視 ---
+        // Event Listeners
         document.getElementById('searchInput').addEventListener('input', applyFilters);
         document.getElementById('filterJudge').addEventListener('change', applyFilters);
         document.getElementById('filterDept').addEventListener('change', applyFilters);
