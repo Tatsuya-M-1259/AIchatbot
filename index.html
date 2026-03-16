@@ -5,12 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Answer Analysis & Reviewer (Local Edition)</title>
     
-    <!-- アイコン・PWA設定 -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E">
     <meta name="apple-mobile-web-app-capable" content="yes">
 
-    <!-- 外部ライブラリ (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -80,7 +78,6 @@
 </head>
 <body class="min-h-screen text-slate-800">
 
-    <!-- Header -->
     <header class="sticky top-0 z-50 w-full bg-white border-b border-slate-200 shadow-sm">
         <div class="max-w-full mx-auto px-4 h-16 flex items-center justify-between">
             <div class="flex items-center gap-4">
@@ -115,7 +112,6 @@
     <div id="uiMessage" class="hidden fixed top-24 left-1/2 -translate-x-1/2 z-[300] min-w-[320px] px-8 py-5 rounded-3xl text-sm font-bold flex flex-col items-center gap-3 text-center transition-all"></div>
 
     <main class="p-6 space-y-6">
-        <!-- KPI Section (日本語表記に修正) -->
         <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
             <div class="xl:col-span-3 grid grid-cols-2 gap-4">
                 <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
@@ -150,7 +146,6 @@
             </div>
         </div>
 
-        <!-- Table Area -->
         <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden flex flex-col min-h-[600px]">
             <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex flex-wrap gap-4 items-center justify-between">
                 <div class="flex items-center gap-4">
@@ -176,7 +171,6 @@
                 <div class="text-xs font-black text-slate-400 tracking-widest uppercase"><span id="recordCount" class="text-indigo-600 text-lg mr-1 font-black">0</span> RECORDS TOTAL</div>
             </div>
             
-            <!-- Grid Table -->
             <div class="overflow-auto flex-grow relative bg-slate-50/20">
                 <table class="data-table hidden" id="mainDataTable">
                     <thead>
@@ -192,7 +186,6 @@
                     <tbody id="dataTableBody"></tbody>
                 </table>
 
-                <!-- Empty State -->
                 <div id="emptyState" class="absolute inset-0 flex items-center justify-center p-10 cursor-pointer" onclick="document.getElementById('csvUpload').click()">
                     <div class="drop-zone p-16 rounded-[40px] w-full max-w-xl flex flex-col items-center gap-6 text-center shadow-inner">
                         <div class="bg-indigo-600 p-6 rounded-3xl text-white shadow-2xl shadow-indigo-200">
@@ -208,7 +201,6 @@
         </div>
     </main>
 
-    <!-- Review Modal (Status同期版) -->
     <div id="reviewModal" class="fixed inset-0 z-[200] hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/70 backdrop-blur-md" onclick="closeModal()"></div>
         <div class="relative bg-white w-full max-w-6xl rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
@@ -222,7 +214,6 @@
                 </div>
                 <button onclick="closeModal()" class="p-3 hover:bg-slate-100 rounded-full transition-all"><i data-lucide="x" class="w-7 h-7 text-slate-400"></i></button>
             </div>
-            <!-- Modal Body -->
             <div class="p-8 overflow-y-auto grid grid-cols-1 lg:grid-cols-2 gap-8 bg-slate-50/50">
                 <div class="space-y-6">
                     <div class="grid grid-cols-2 gap-4">
@@ -242,10 +233,9 @@
                         <div class="p-4 bg-white rounded-2xl border-2 border-slate-100 shadow-sm"><label class="text-[10px] font-black text-slate-400 block mb-2 uppercase">Error Type</label><select id="edit-errorType" class="w-full px-2 py-2 border-2 border-slate-200 rounded-xl text-sm bg-white font-bold"><option value="なし">なし</option><option value="RAG欠如">RAG欠如</option><option value="ハルシネーション">ハルシネーション</option><option value="指示無視">指示無視</option><option value="文脈喪失">文脈喪失</option><option value="その他">その他</option></select></div>
                     </div>
                     <div class="p-4 bg-white rounded-2xl border-2 border-slate-100 shadow-sm">
-                        <label class="text-[10px] font-black text-slate-400 block mb-2 underline decoration-indigo-300">対応状況 (CSVデータと同期中)</label>
+                        <label class="text-[10px] font-black text-slate-400 block mb-2 underline decoration-indigo-300">対応状況</label>
                         <select id="edit-status" class="w-full px-2 py-2 border-2 border-slate-200 rounded-xl text-sm bg-white font-bold focus:border-indigo-500 outline-none">
-                            <!-- JSで動的に同期 -->
-                        </select>
+                            </select>
                     </div>
                     <div class="p-4 bg-white rounded-2xl border-2 border-slate-100 shadow-sm"><label class="text-[10px] font-black text-slate-400 block mb-3">所管課（最大3枠）</label><div class="grid grid-cols-3 gap-3"><input type="text" id="edit-dept1" class="px-3 py-2 border-2 border-slate-200 rounded-xl text-xs" placeholder="課1"><input type="text" id="edit-dept2" class="px-3 py-2 border-2 border-slate-200 rounded-xl text-xs" placeholder="課2"><input type="text" id="edit-dept3" class="px-3 py-2 border-2 border-slate-200 rounded-xl text-xs" placeholder="課3"></div></div>
                     <div><label class="text-[10px] font-black text-emerald-600 block mb-1.5 uppercase underline decoration-emerald-300">Ideal Answer</label><textarea id="edit-ideal" class="w-full px-5 py-4 border-2 border-emerald-100 bg-emerald-50/20 rounded-2xl text-sm h-36 leading-relaxed shadow-sm"></textarea></div>
@@ -259,15 +249,15 @@
         </div>
     </div>
 
-    <!-- Script Section -->
     <script>
-        const STORAGE_KEY = 'ai_answer_review_v_local_perfect_final_sync';
+        const STORAGE_KEY = 'ai_answer_review_v_local_perfect_final_sync_csv';
         let fullData = [];
         let filteredData = [];
         let sortConfig = { key: 'id', direction: 'desc' };
         let charts = {};
         let currentEditingId = null;
-        let uniqueStatuses = ['未着手', '対応中', '完了', '保留', 'なし']; 
+        // CSVの項目に合わせデフォルト項目を整理
+        let uniqueStatuses = ['未着手', '検証中', '対応中', '反映すみ', '対象外', '保留', 'なし']; 
 
         // 起動時初期化
         window.onload = () => {
@@ -294,7 +284,7 @@
 
         // CSVから得られた独自の値を同期 (Status, Dept)
         function syncUniqueValues() {
-            const statusSet = new Set(['未着手', '対応中', '完了', '保留', 'なし']);
+            const statusSet = new Set(['未着手', '検証中', '対応中', '反映すみ', '対象外', '保留', 'なし']);
             const deptSet = new Set();
             
             fullData.forEach(d => {
@@ -302,7 +292,12 @@
                 [d.dept1, d.dept2, d.dept3].forEach(v => v && deptSet.add(v.trim()));
             });
             
-            uniqueStatuses = Array.from(statusSet).filter(Boolean).sort();
+            uniqueStatuses = Array.from(statusSet).filter(Boolean).sort((a,b) => {
+                // 未着手を先頭にするなどの並び替え
+                if (a === '未着手') return -1;
+                if (b === '未着手') return 1;
+                return a.localeCompare(b, 'ja');
+            });
             
             // フィルタリスト更新
             const sFilter = document.getElementById('filterStatus');
@@ -413,8 +408,10 @@
             const correct = fullData.filter(d => d.judge === '◎正解').length;
             const partial = fullData.filter(d => d.judge === '〇一部正解').length;
             const accuracy = total > 0 ? (((correct + (partial * 0.5)) / total) * 100).toFixed(1) : 0;
-            // 未対応判定：完了・済・反映済み・なし 以外のものをカウント
-            const pending = fullData.filter(d => !['完了', '済', '反映済', '反映済み', 'なし'].includes(d.status)).length;
+            
+            // 未対応判定の整理：完了・済・反映済み・対象外・なし 以外のものをカウント
+            const resolvedStatuses = ['完了', '済', '反映済み', '反映すみ', '反映済', '対象外', 'なし'];
+            const pending = fullData.filter(d => !resolvedStatuses.includes(d.status)).length;
             const errors = fullData.filter(d => d.errorType && d.errorType !== 'なし').length;
             
             document.getElementById('stat-total').textContent = total;
@@ -500,7 +497,7 @@
 
             saveToLocal();
             syncUniqueValues();
-            applyFilters(); // 一覧の再計算
+            applyFilters();
             closeModal();
             showMessage("<i data-lucide='check-circle' class='w-4 h-4'></i> 変更を保存しました");
             currentEditingId = null;
