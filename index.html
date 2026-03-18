@@ -22,7 +22,6 @@
             background-color: #f1f5f9;
         }
 
-        /* テーブルレイアウトの固定 */
         .data-table { border-spacing: 0; width: 100%; table-layout: fixed; }
         .data-table th, .data-table td {
             border-right: 1px solid #e2e8f0;
@@ -64,7 +63,6 @@
         .drop-zone { border: 2px dashed #cbd5e1; transition: all 0.2s; }
         .drop-zone.active { border-color: #4f46e5; background-color: #f5f3ff; }
 
-        /* グラフエリアの絶対固定 */
         .chart-container {
             position: relative;
             height: 180px; 
@@ -100,6 +98,11 @@
                     <i data-lucide="upload" class="w-4 h-4 text-indigo-500"></i>CSVインポート
                 </label>
                 <input type="file" id="csvUpload" class="hidden" accept=".csv">
+                
+                <button onclick="exportAsHtmlViewer()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 shadow-md" title="全データを含んだHTMLファイルを出力します">
+                    <i data-lucide="eye" class="w-4 h-4"></i>ビューワー出力
+                </button>
+
                 <button onclick="exportData()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 shadow-md">
                     <i data-lucide="download" class="w-4 h-4 text-indigo-300"></i>CSV出力
                 </button>
@@ -161,12 +164,6 @@
                         <option value="✕不正解">✕ 不正解</option>
                         <option value="△判別不能">△ 判別不能</option>
                     </select>
-                    <select id="filterDept" class="text-sm border-2 border-slate-200 rounded-xl px-3 py-2 bg-white outline-none focus:border-indigo-500 font-bold text-slate-600 min-w-[180px]">
-                        <option value="all">すべての所管課</option>
-                    </select>
-                    <select id="filterStatus" class="text-sm border-2 border-slate-200 rounded-xl px-3 py-2 bg-white outline-none focus:border-indigo-500 font-bold text-slate-600">
-                        <option value="all">すべての対応状況</option>
-                    </select>
                 </div>
                 <div class="text-xs font-black text-slate-400 tracking-widest uppercase"><span id="recordCount" class="text-indigo-600 text-lg mr-1 font-black">0</span> RECORDS TOTAL</div>
             </div>
@@ -179,7 +176,7 @@
                             <th class="col-judge text-left">判定</th>
                             <th class="col-error text-left">エラー分類</th>
                             <th class="col-dept text-left sortable-header" id="th-dept1" onclick="toggleSort('dept1')">所管課 <i data-lucide="chevrons-up-down" class="w-3 h-3 inline ml-1"></i></th>
-                            <th class="col-query text-left">問い合わせ内容</th>
+                            <th class="col-query text-left">内容</th>
                             <th class="col-action text-center">操作</th>
                         </tr>
                     </thead>
@@ -191,10 +188,7 @@
                         <div class="bg-indigo-600 p-6 rounded-3xl text-white shadow-2xl shadow-indigo-200">
                             <i data-lucide="file-spreadsheet" class="w-12 h-12"></i>
                         </div>
-                        <div>
-                            <h3 class="font-black text-slate-800 text-2xl tracking-tighter">CSVデータをインポートしてください</h3>
-                            <p class="text-slate-500 mt-2 font-medium">ここをクリックするか、CSVファイルをドロップして開始</p>
-                        </div>
+                        <h3 class="font-black text-slate-800 text-2xl tracking-tighter">データをインポートしてください</h3>
                     </div>
                 </div>
             </div>
@@ -216,30 +210,33 @@
             </div>
             <div class="p-8 overflow-y-auto grid grid-cols-1 lg:grid-cols-2 gap-8 bg-slate-50/50">
                 <div class="space-y-6">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><label class="text-[10px] font-black text-slate-400 block mb-1.5 uppercase tracking-widest">案件ID</label><input type="text" id="edit-id" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-sm font-mono shadow-sm bg-slate-50" readonly></div>
-                        <div><label class="text-[10px] font-black text-slate-400 block mb-1.5 uppercase tracking-widest">問い合わせ日時</label><input type="text" id="edit-date" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-sm shadow-sm"></div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><label class="text-[10px] font-black text-slate-400 block mb-1.5 uppercase tracking-widest">セッションID</label><input type="text" id="edit-session" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-sm shadow-sm"></div>
-                        <div><label class="text-[10px] font-black text-slate-400 block mb-1.5 uppercase tracking-widest">ユーザーID</label><input type="text" id="edit-userId" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-sm shadow-sm"></div>
-                    </div>
                     <div><label class="text-[10px] font-black text-slate-400 block mb-1.5 uppercase tracking-widest">問い合わせ内容</label><textarea id="edit-query" class="w-full px-5 py-4 border-2 border-slate-200 rounded-2xl text-sm h-40 bg-white leading-relaxed shadow-sm"></textarea></div>
                     <div><label class="text-[10px] font-black text-indigo-500 block mb-1.5 uppercase tracking-widest">AI回答</label><textarea id="edit-answer" class="w-full px-5 py-4 border-2 border-indigo-100 bg-indigo-50/30 rounded-2xl text-sm h-56 leading-relaxed shadow-sm"></textarea></div>
                 </div>
                 <div class="space-y-6">
                     <div class="grid grid-cols-2 gap-4">
-                        <div class="p-4 bg-white rounded-2xl border-2 border-slate-100 shadow-sm"><label class="text-[10px] font-black text-slate-400 block mb-2 underline decoration-indigo-300 uppercase">Judgment</label><select id="edit-judge" class="w-full px-2 py-2 border-2 border-slate-200 rounded-xl text-sm font-black bg-white focus:border-indigo-400 outline-none"><option value="◎正解">◎ 正解</option><option value="〇一部正解">〇 一部正解</option><option value="✕不正解">✕ 不正解</option><option value="△判別不能">△ 判別不能</option></select></div>
-                        <div class="p-4 bg-white rounded-2xl border-2 border-slate-100 shadow-sm"><label class="text-[10px] font-black text-slate-400 block mb-2 uppercase">Error Type</label><select id="edit-errorType" class="w-full px-2 py-2 border-2 border-slate-200 rounded-xl text-sm bg-white font-bold"><option value="なし">なし</option><option value="RAG欠如">RAG欠如</option><option value="ハルシネーション">ハルシネーション</option><option value="指示無視">指示無視</option><option value="文脈喪失">文脈喪失</option><option value="その他">その他</option></select></div>
-                    </div>
-                    <div class="p-4 bg-white rounded-2xl border-2 border-slate-100 shadow-sm">
-                        <label class="text-[10px] font-black text-slate-400 block mb-2 underline decoration-indigo-300">対応状況</label>
-                        <select id="edit-status" class="w-full px-2 py-2 border-2 border-slate-200 rounded-xl text-sm bg-white font-bold focus:border-indigo-500 outline-none">
+                        <div class="p-4 bg-white rounded-2xl border-2 border-slate-100 shadow-sm">
+                            <label class="text-[10px] font-black text-slate-400 block mb-2 uppercase">判定</label>
+                            <select id="edit-judge" class="w-full px-2 py-2 border-2 border-slate-200 rounded-xl text-sm font-black bg-white focus:border-indigo-400 outline-none">
+                                <option value="◎正解">◎ 正解</option>
+                                <option value="〇一部正解">〇 一部正解</option>
+                                <option value="✕不正解">✕ 不正解</option>
+                                <option value="△判別不能">△ 判別不能</option>
                             </select>
+                        </div>
+                        <div class="p-4 bg-white rounded-2xl border-2 border-slate-100 shadow-sm">
+                            <label class="text-[10px] font-black text-slate-400 block mb-2 uppercase">エラー分類</label>
+                            <select id="edit-errorType" class="w-full px-2 py-2 border-2 border-slate-200 rounded-xl text-sm bg-white font-bold">
+                                <option value="なし">なし</option>
+                                <option value="RAG欠如">RAG欠如</option>
+                                <option value="ハルシネーション">ハルシネーション</option>
+                                <option value="指示無視">指示無視</option>
+                                <option value="その他">その他</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="p-4 bg-white rounded-2xl border-2 border-slate-100 shadow-sm"><label class="text-[10px] font-black text-slate-400 block mb-3">所管課（最大3枠）</label><div class="grid grid-cols-3 gap-3"><input type="text" id="edit-dept1" class="px-3 py-2 border-2 border-slate-200 rounded-xl text-xs" placeholder="課1"><input type="text" id="edit-dept2" class="px-3 py-2 border-2 border-slate-200 rounded-xl text-xs" placeholder="課2"><input type="text" id="edit-dept3" class="px-3 py-2 border-2 border-slate-200 rounded-xl text-xs" placeholder="課3"></div></div>
-                    <div><label class="text-[10px] font-black text-emerald-600 block mb-1.5 uppercase underline decoration-emerald-300">Ideal Answer</label><textarea id="edit-ideal" class="w-full px-5 py-4 border-2 border-emerald-100 bg-emerald-50/20 rounded-2xl text-sm h-36 leading-relaxed shadow-sm"></textarea></div>
-                    <div><label class="text-[10px] font-black text-amber-600 block mb-1.5 uppercase underline decoration-amber-300">Analysis Note</label><textarea id="edit-action" class="w-full px-5 py-4 border-2 border-amber-100 bg-amber-50/20 rounded-2xl text-sm h-36 leading-relaxed shadow-sm"></textarea></div>
+                    <div><label class="text-[10px] font-black text-emerald-600 block mb-1.5 uppercase underline">理想の回答</label><textarea id="edit-ideal" class="w-full px-5 py-4 border-2 border-emerald-100 bg-emerald-50/20 rounded-2xl text-sm h-36 leading-relaxed shadow-sm"></textarea></div>
+                    <div><label class="text-[10px] font-black text-amber-600 block mb-1.5 uppercase underline">改善アクション</label><textarea id="edit-action" class="w-full px-5 py-4 border-2 border-amber-100 bg-amber-50/20 rounded-2xl text-sm h-36 leading-relaxed shadow-sm"></textarea></div>
                 </div>
             </div>
             <div class="p-6 border-t border-slate-100 flex justify-end gap-3 bg-white">
@@ -256,131 +253,39 @@
         let sortConfig = { key: 'id', direction: 'desc' };
         let charts = {};
         let currentEditingId = null;
-        // CSVの項目に合わせデフォルト項目を整理
-        let uniqueStatuses = ['未着手', '検証中', '対応中', '反映すみ', '対象外', '保留', 'なし']; 
 
-        // 起動時初期化
+        // 【修正】起動時初期化（埋め込みデータの確認を追加）
         window.onload = () => {
             lucide.createIcons();
+            
+            // 出力されたビューワーの場合、window.PRE_LOADED_DATA が存在する
+            const preLoaded = window.PRE_LOADED_DATA;
             const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
+            
+            if (preLoaded) {
+                fullData = preLoaded;
+                showMessage("<i data-lucide='eye' class='w-4 h-4'></i> 埋め込みデータを表示中 (読み取り専用形式)");
+            } else if (saved) {
                 try {
                     fullData = JSON.parse(saved);
-                    syncUniqueValues();
-                    applyFilters();
-                    showMessage("<i data-lucide='check-circle' class='w-4 h-4'></i> ローカルデータをロードしました");
                 } catch(e) { console.error(e); }
             }
-            refreshUI();
+            
+            applyFilters();
         };
 
-        function showMessage(text, isError = false) {
-            const el = document.getElementById('uiMessage');
-            el.innerHTML = text;
-            el.className = `fixed top-24 left-1/2 -translate-x-1/2 z-[300] min-w-[320px] px-8 py-5 rounded-3xl shadow-2xl text-sm font-bold flex flex-col items-center gap-3 text-center transition-all ${isError ? 'bg-rose-600 text-white' : 'bg-slate-900 text-white'}`;
-            el.classList.remove('hidden');
-            setTimeout(() => el.classList.add('hidden'), 4000);
-        }
+        // --- メインロジック ---
 
-        // CSVから得られた独自の値を同期 (Status, Dept)
-        function syncUniqueValues() {
-            const statusSet = new Set(['未着手', '検証中', '対応中', '反映すみ', '対象外', '保留', 'なし']);
-            const deptSet = new Set();
-            
-            fullData.forEach(d => {
-                if (d.status) statusSet.add(d.status.trim());
-                [d.dept1, d.dept2, d.dept3].forEach(v => v && deptSet.add(v.trim()));
-            });
-            
-            uniqueStatuses = Array.from(statusSet).filter(Boolean).sort((a,b) => {
-                // 未着手を先頭にするなどの並び替え
-                if (a === '未着手') return -1;
-                if (b === '未着手') return 1;
-                return a.localeCompare(b, 'ja');
-            });
-            
-            // フィルタリスト更新
-            const sFilter = document.getElementById('filterStatus');
-            const dFilter = document.getElementById('filterDept');
-            const curS = sFilter.value;
-            const curD = dFilter.value;
-
-            sFilter.innerHTML = '<option value="all">すべての対応状況</option>';
-            uniqueStatuses.forEach(s => {
-                const opt = document.createElement('option'); opt.value = opt.textContent = s; sFilter.appendChild(opt);
-            });
-            if (statusSet.has(curS)) sFilter.value = curS;
-
-            dFilter.innerHTML = '<option value="all">すべての所管課</option>';
-            Array.from(deptSet).sort().forEach(d => {
-                const opt = document.createElement('option'); opt.value = opt.textContent = d; dFilter.appendChild(opt);
-            });
-            if (deptSet.has(curD)) dFilter.value = curD;
-        }
-
-        // インポート処理
-        document.getElementById('csvUpload').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            if (fullData.length > 0 && !confirm("既存データを削除し、新しいCSVに置き換えますか？")) {
-                e.target.value = ""; return;
-            }
-
-            Papa.parse(file, {
-                header: true, skipEmptyLines: true,
-                transformHeader: (h) => h.trim().replace(/^\uFEFF/, ''),
-                complete: (results) => {
-                    fullData = results.data.map((item, index) => {
-                        const get = (keys) => {
-                            for(let opt of keys) if (item[opt] !== undefined) return item[opt];
-                            return '';
-                        };
-                        const rawDepts = (get(['所管課', 'dept']) || '').split(/[\n,]/);
-                        return {
-                            id: (get(['案件ID', 'id']) || `CASE-${Date.now()}-${index}`).toString().trim(),
-                            session: get(['セッションID', 'session']) || '',
-                            date: get(['問い合わせ日時', 'date']) || '',
-                            userId: get(['ユーザーID', 'userId']) || '',
-                            query: get(['問い合わせ内容', 'query']) || '',
-                            answer: get(['回答内容', 'answer']) || '',
-                            dept1: rawDepts[0]?.trim() || '',
-                            dept2: rawDepts[1]?.trim() || '',
-                            dept3: rawDepts[2]?.trim() || '',
-                            judge: get(['正誤判定', 'judge']) || '△判別不能',
-                            errorType: get(['エラー分類', 'errorType']) || 'なし',
-                            ideal: get(['理想の回答', 'ideal']) || '',
-                            action: get(['改善アクション', 'action']) || '',
-                            status: get(['対応状況', 'status']) || '未着手',
-                            length: get(['文字数', 'length']) || (get(['回答内容', 'answer']) ? get(['回答内容', 'answer']).length : 0)
-                        };
-                    });
-                    saveToLocal();
-                    syncUniqueValues();
-                    applyFilters();
-                    showMessage(`<i data-lucide='download' class='w-4 h-4'></i> ${fullData.length} 件インポートしました`);
-                }
-            });
-            e.target.value = "";
-        });
-
-        // 共通フィルタ & ソート
         function applyFilters() {
             const q = document.getElementById('searchInput').value.toLowerCase();
             const j = document.getElementById('filterJudge').value;
-            const d = document.getElementById('filterDept').value;
-            const s = document.getElementById('filterStatus').value;
 
             filteredData = fullData.filter(item => {
-                const deptsAll = `${item.dept1} ${item.dept2} ${item.dept3}`.toLowerCase();
                 const matchSearch = String(item.id).toLowerCase().includes(q) || 
                                    String(item.query).toLowerCase().includes(q) || 
-                                   String(item.answer).toLowerCase().includes(q) || 
-                                   deptsAll.includes(q);
+                                   String(item.answer).toLowerCase().includes(q);
                 const matchJudge = (j === 'all' || item.judge === j);
-                const matchDept = (d === 'all' || item.dept1 === d || item.dept2 === d || item.dept3 === d);
-                const matchStatus = (s === 'all' || item.status === s);
-                return matchSearch && matchJudge && matchDept && matchStatus;
+                return matchSearch && matchJudge;
             });
 
             if (sortConfig.key) {
@@ -409,15 +314,8 @@
             const partial = fullData.filter(d => d.judge === '〇一部正解').length;
             const accuracy = total > 0 ? (((correct + (partial * 0.5)) / total) * 100).toFixed(1) : 0;
             
-            // 未対応判定の整理：完了・済・反映済み・対象外・なし 以外のものをカウント
-            const resolvedStatuses = ['完了', '済', '反映済み', '反映すみ', '反映済', '対象外', 'なし'];
-            const pending = fullData.filter(d => !resolvedStatuses.includes(d.status)).length;
-            const errors = fullData.filter(d => d.errorType && d.errorType !== 'なし').length;
-            
             document.getElementById('stat-total').textContent = total;
             document.getElementById('stat-accuracy').textContent = `${accuracy}%`;
-            document.getElementById('stat-pending').textContent = pending;
-            document.getElementById('stat-errors').textContent = errors;
         }
 
         function renderTable() {
@@ -427,12 +325,11 @@
                 const tr = document.createElement('tr');
                 tr.className = `hover:bg-indigo-50 cursor-pointer text-[12px] border-l-4 transition-all ${getJudgeClass(row.judge)}`;
                 tr.onclick = () => openReview(row.id);
-                const depts = [row.dept1, row.dept2, row.dept3].filter(Boolean).join(', ');
                 tr.innerHTML = `
                     <td class="col-id font-mono text-slate-500 font-bold">${row.id}</td>
                     <td class="col-judge"><span class="status-badge ${getBadgeColor(row.judge)}">${row.judge}</span></td>
                     <td class="col-error text-slate-600 font-bold">${row.errorType}</td>
-                    <td class="col-dept text-slate-500 italic">${depts || '-'}</td>
+                    <td class="col-dept text-slate-500 italic">${row.dept1 || '-'}</td>
                     <td class="col-query text-slate-800 font-bold">${row.query}</td>
                     <td class="col-action text-center"><button class="bg-white border border-slate-200 hover:bg-indigo-600 hover:text-white px-2 py-1 rounded font-black transition-all">EDIT</button></td>
                 `;
@@ -443,132 +340,118 @@
         function getJudgeClass(j) { return j==='◎正解' ? 'row-correct' : j==='〇一部正解' ? 'row-partial' : j==='✕不正解' ? 'row-incorrect' : 'row-unknown'; }
         function getBadgeColor(j) { return j==='◎正解' ? 'bg-emerald-100 text-emerald-700' : j==='〇一部正解' ? 'bg-amber-100 text-amber-700' : j==='✕不正解' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-500'; }
 
+        // --- 統計グラフ ---
         function initCharts() {
             const judgeCounts = {}; fullData.forEach(d => judgeCounts[d.judge] = (judgeCounts[d.judge] || 0) + 1);
-            const errorCounts = {}; fullData.filter(d => d.errorType && d.errorType !== 'なし').forEach(d => errorCounts[d.errorType] = (errorCounts[d.errorType] || 0) + 1);
             if (charts.judgment) charts.judgment.destroy();
-            if (charts.error) charts.error.destroy();
             const ctx1 = document.getElementById('judgmentChart');
             if (ctx1 && fullData.length > 0) {
                 charts.judgment = new Chart(ctx1, { 
-                    type: 'doughnut', data: { labels: Object.keys(judgeCounts), datasets: [{ data: Object.values(judgeCounts), backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#94a3b8'], borderWidth: 0, hoverOffset: 5 }] }, 
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 6, font: { size: 9, weight: 'bold' }, padding: 8 } } } } 
-                });
-            }
-            const ctx2 = document.getElementById('errorChart');
-            if (ctx2 && Object.keys(errorCounts).length > 0) {
-                charts.error = new Chart(ctx2, { 
-                    type: 'bar', data: { labels: Object.keys(errorCounts), datasets: [{ label: '件数', data: Object.values(errorCounts), backgroundColor: '#6366f1', borderRadius: 4 }] }, 
-                    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 9 } } }, y: { grid: { display: false }, ticks: { font: { size: 9, weight: 'bold' } } } } } 
+                    type: 'doughnut', data: { labels: Object.keys(judgeCounts), datasets: [{ data: Object.values(judgeCounts), backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#94a3b8'], borderWidth: 0 }] }, 
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } } 
                 });
             }
         }
 
-        // 保存ロジック（確実に上書き & 同期）
-        window.saveChanges = () => {
-            const id = document.getElementById('edit-id').value.trim();
-            if (!id) return alert("案件IDは必須です");
+        // --- データ入出力 ---
 
-            const record = {
-                id: id,
-                date: document.getElementById('edit-date').value,
-                session: document.getElementById('edit-session').value,
-                userId: document.getElementById('edit-userId').value,
-                query: document.getElementById('edit-query').value,
-                answer: document.getElementById('edit-answer').value,
-                judge: document.getElementById('edit-judge').value,
-                errorType: document.getElementById('edit-errorType').value,
-                status: document.getElementById('edit-status').value,
-                dept1: document.getElementById('edit-dept1').value.trim(),
-                dept2: document.getElementById('edit-dept2').value.trim(),
-                dept3: document.getElementById('edit-dept3').value.trim(),
-                ideal: document.getElementById('edit-ideal').value,
-                action: document.getElementById('edit-action').value,
-                length: document.getElementById('edit-answer').value.length
-            };
+        // CSVインポート
+        document.getElementById('csvUpload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            Papa.parse(file, {
+                header: true, skipEmptyLines: true,
+                complete: (results) => {
+                    fullData = results.data.map(item => ({
+                        id: (item['案件ID'] || item['id'] || Date.now()).toString(),
+                        query: item['問い合わせ内容'] || item['query'] || '',
+                        answer: item['回答内容'] || item['answer'] || '',
+                        judge: item['正誤判定'] || item['judge'] || '△判別不能',
+                        errorType: item['エラー分類'] || item['errorType'] || 'なし',
+                        ideal: item['理想の回答'] || item['ideal'] || '',
+                        action: item['改善アクション'] || item['action'] || '',
+                        dept1: item['所管課'] || item['dept'] || ''
+                    }));
+                    saveToLocal();
+                    applyFilters();
+                    showMessage("インポート完了");
+                }
+            });
+        });
 
-            const idx = fullData.findIndex(d => String(d.id) === String(currentEditingId || id));
+        // 【新設】HTMLビューワー出力
+        window.exportAsHtmlViewer = () => {
+            if (fullData.length === 0) return alert("データがありません");
+
+            // 現在のHTMLソースを取得
+            let html = document.documentElement.outerHTML;
             
-            if (idx !== -1) {
-                fullData[idx] = { ...fullData[idx], ...record };
-            } else {
-                fullData.unshift(record);
-            }
-
-            saveToLocal();
-            syncUniqueValues();
-            applyFilters();
-            closeModal();
-            showMessage("<i data-lucide='check-circle' class='w-4 h-4'></i> 変更を保存しました");
-            currentEditingId = null;
+            // データをスクリプトとして埋め込む（XSS対策のため一部文字をエスケープ）
+            const dataStr = JSON.stringify(fullData).replace(/<\/script>/g, '<\\/script>');
+            const dataScript = `\n<script>window.PRE_LOADED_DATA = ${dataStr};<\/script>\n`;
+            
+            // <head>の直後に差し込む
+            html = html.replace('<head>', '<head>' + dataScript);
+            
+            const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `業務引き継ぎビューワー_${new Date().toISOString().split('T')[0]}.html`;
+            link.click();
+            showMessage("ビューワーを出力しました");
         };
 
-        function saveToLocal() { localStorage.setItem(STORAGE_KEY, JSON.stringify(fullData)); }
-
-        window.openNewRecordModal = () => {
-            currentEditingId = null;
-            document.getElementById('modalTitle').textContent = "新規案件登録";
-            document.getElementById('modalCaseIdDisplay').textContent = "NEW ENTRY";
-            
-            const sEdit = document.getElementById('edit-status');
-            sEdit.innerHTML = uniqueStatuses.map(s => `<option value="${s}">${s}</option>`).join('');
-
-            ['edit-id', 'edit-session', 'edit-userId', 'edit-query', 'edit-answer', 'edit-dept1', 'edit-dept2', 'edit-dept3', 'edit-ideal', 'edit-action'].forEach(id => document.getElementById(id).value = "");
-            document.getElementById('edit-id').value = `CASE-${Date.now().toString().slice(-6)}`;
-            document.getElementById('edit-date').value = new Date().toLocaleString('ja-JP');
-            document.getElementById('edit-judge').value = "△判別不能";
-            document.getElementById('edit-errorType').value = "なし";
-            document.getElementById('edit-status').value = "未着手";
-            document.getElementById('reviewModal').classList.remove('hidden');
+        window.exportData = () => {
+            const csv = Papa.unparse(fullData);
+            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "data.csv"; link.click();
         };
 
+        // --- その他UI操作 ---
         window.openReview = (id) => {
             const item = fullData.find(d => String(d.id) === String(id));
             if(!item) return;
-
             currentEditingId = id;
-            document.getElementById('modalTitle').textContent = "査読・データ編集";
             document.getElementById('modalCaseIdDisplay').textContent = item.id;
-            
-            const sEdit = document.getElementById('edit-status');
-            sEdit.innerHTML = uniqueStatuses.map(s => `<option value="${s}">${s}</option>`).join('');
-
-            ['id', 'session', 'date', 'userId', 'query', 'answer', 'judge', 'errorType', 'status', 'dept1', 'dept2', 'dept3', 'ideal', 'action'].forEach(k => {
-                const el = document.getElementById(`edit-${k}`);
-                if (el) el.value = item[k] || '';
+            ['query', 'answer', 'judge', 'errorType', 'ideal', 'action'].forEach(k => {
+                document.getElementById(`edit-${k}`).value = item[k] || '';
             });
             document.getElementById('reviewModal').classList.remove('hidden');
         };
 
         window.closeModal = () => document.getElementById('reviewModal').classList.add('hidden');
 
-        window.clearStoredData = () => {
-            if (!confirm("全てのデータを消去します。本当によろしいですか？")) return;
-            localStorage.removeItem(STORAGE_KEY); fullData = []; applyFilters(); showMessage("全消去しました");
+        window.saveChanges = () => {
+            const idx = fullData.findIndex(d => String(d.id) === String(currentEditingId));
+            if (idx !== -1) {
+                ['query', 'answer', 'judge', 'errorType', 'ideal', 'action'].forEach(k => {
+                    fullData[idx][k] = document.getElementById(`edit-${k}`).value;
+                });
+                saveToLocal();
+                applyFilters();
+                closeModal();
+                showMessage("保存しました");
+            }
         };
 
-        window.exportData = () => {
-            if (fullData.length === 0) return alert("データがありません");
-            const exp = fullData.map(d => ({
-                "案件ID": d.id, "セッションID": d.session, "問い合わせ日時": d.date, "ユーザーID": d.userId, "問い合わせ内容": d.query, "回答内容": d.answer, "所管課": [d.dept1, d.dept2, d.dept3].filter(Boolean).join('\n'), "正誤判定": d.judge, "エラー分類": d.errorType, "理想の回答": d.ideal, "改善アクション": d.action, "対応状況": d.status, "文字数": d.length
-            }));
-            const csv = Papa.unparse(exp);
-            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
-            link.download = `AI分析結果_${new Date().toISOString().split('T')[0]}.csv`; link.click();
-        };
-
+        function saveToLocal() { localStorage.setItem(STORAGE_KEY, JSON.stringify(fullData)); }
+        function showMessage(text) {
+            const el = document.getElementById('uiMessage');
+            el.innerHTML = text;
+            el.className = "fixed top-24 left-1/2 -translate-x-1/2 z-[300] min-w-[320px] px-8 py-5 rounded-3xl bg-slate-900 text-white shadow-2xl text-sm font-bold flex flex-col items-center gap-3 text-center transition-all";
+            el.classList.remove('hidden');
+            setTimeout(() => el.classList.add('hidden'), 3000);
+        }
         window.toggleSort = (key) => {
             sortConfig.direction = (sortConfig.key === key && sortConfig.direction === 'asc') ? 'desc' : 'asc';
             sortConfig.key = key;
             applyFilters();
         };
 
-        // Event Listeners
         document.getElementById('searchInput').addEventListener('input', applyFilters);
         document.getElementById('filterJudge').addEventListener('change', applyFilters);
-        document.getElementById('filterDept').addEventListener('change', applyFilters);
-        document.getElementById('filterStatus').addEventListener('change', applyFilters);
     </script>
 </body>
 </html>
