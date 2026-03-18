@@ -207,7 +207,7 @@
                             <label class="text-[10px] font-black text-slate-400 block mb-2 uppercase">エラー分類</label>
                             <select id="edit-errorType" class="w-full px-2 py-2 border-2 border-slate-200 rounded-xl text-sm font-bold bg-white focus:border-indigo-400 outline-none">
                                 <option value="なし">なし</option>
-                                <option value="RAG欠如">RAG欠如</option>
+                                <option value="RAG欠如">RAG欠る</option>
                                 <option value="ハルシネーション">ハルシネーション</option>
                                 <option value="指示無視">指示無視</option>
                                 <option value="文脈喪失">文脈喪失</option>
@@ -313,7 +313,10 @@
             const denominator = total - nUnknown;
             const numerator = nCorrect + nPartial;
             const accuracy = denominator > 0 ? ((numerator / denominator) * 100).toFixed(1) : 0;
-            const pending = fullData.filter(d => !['完了', '反映済み', '済', '反映済'].includes(d.status)).length;
+            
+            // 修正箇所：対応状況が「未着手」の件数のみをカウント
+            const pending = fullData.filter(d => d.status === '未着手').length;
+            
             const errors = fullData.filter(d => d.errorType && d.errorType !== 'なし').length;
             document.getElementById('stat-total').textContent = total;
             document.getElementById('stat-accuracy').textContent = `${accuracy}%`;
