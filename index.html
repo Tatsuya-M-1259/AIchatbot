@@ -306,30 +306,21 @@
 
         function updateDashboard() {
             const total = fullData.length;
-            
-            // 各判定の件数を取得
             const nCorrect = fullData.filter(d => d.judge === '◎正解').length;
             const nPartial = fullData.filter(d => d.judge === '〇一部正解').length;
             const nIncorrect = fullData.filter(d => d.judge === '✕不正解').length;
             const nUnknown = fullData.filter(d => d.judge === '△判別不能').length;
-
-            // 正解率の計算：(正解+一部正解) / (全件 - 判別不能)
             const denominator = total - nUnknown;
             const numerator = nCorrect + nPartial;
             const accuracy = denominator > 0 ? ((numerator / denominator) * 100).toFixed(1) : 0;
-            
             const pending = fullData.filter(d => !['完了', '反映済み', '済', '反映済'].includes(d.status)).length;
             const errors = fullData.filter(d => d.errorType && d.errorType !== 'なし').length;
-            
             document.getElementById('stat-total').textContent = total;
             document.getElementById('stat-accuracy').textContent = `${accuracy}%`;
-            
-            // 件数の表示更新
             document.getElementById('cnt-correct').textContent = nCorrect;
             document.getElementById('cnt-partial').textContent = nPartial;
             document.getElementById('cnt-unknown').textContent = nUnknown;
             document.getElementById('cnt-incorrect').textContent = nIncorrect;
-
             document.getElementById('stat-pending').textContent = pending;
             document.getElementById('stat-errors').textContent = errors;
         }
@@ -341,9 +332,7 @@
                 const tr = document.createElement('tr');
                 tr.className = `hover:bg-indigo-50 cursor-pointer text-[12px] border-l-4 transition-all ${getJudgeClass(row.judge)}`;
                 tr.onclick = () => openReview(row.id);
-                
                 const depts = [row.dept1, row.dept2, row.dept3].filter(Boolean).join(' / ');
-                
                 tr.innerHTML = `
                     <td class="col-id font-mono text-slate-500 font-bold">${row.id}</td>
                     <td class="col-judge"><span class="status-badge ${getBadgeColor(row.judge)}">${row.judge}</span></td>
@@ -359,7 +348,6 @@
 
         function getJudgeClass(j) { return j==='◎正解' ? 'row-correct' : j==='〇一部正解' ? 'row-partial' : j==='✕不正解' ? 'row-incorrect' : 'row-unknown'; }
         function getBadgeColor(j) { return j==='◎正解' ? 'bg-emerald-100 text-emerald-700' : j==='〇一部正解' ? 'bg-amber-100 text-amber-700' : j==='✕不正解' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-500'; }
-        
         function getStatusBadgeColor(s) {
             if (['完了', '反映済み', '反映済', '済'].includes(s)) return 'bg-blue-100 text-blue-700';
             if (s === '対応中') return 'bg-amber-100 text-amber-700';
@@ -388,6 +376,7 @@
             }
         }
 
+        // CSVインポート時のデータ正規化 (表記揺れ対策)
         document.getElementById('csvUpload').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -398,18 +387,30 @@
                         const rawDept = item['所管課'] || '';
                         const depts = rawDept.split(/[\n,、\/]/).map(s => s.trim()).filter(Boolean);
                         
+                        // ステータスの正規化
+                        let status = (item['対応状況'] || item['status'] || '未着手').trim();
+                        if (status === '反映済') status = '反映済み';
+                        if (status === '済') status = '完了';
+
+                        // 判定の正規化
+                        let judge = (item['正誤判定'] || item['judge'] || '△判別不能').trim();
+                        if (judge === '正解') judge = '◎正解';
+                        if (judge === '一部正解') judge = '〇一部正解';
+                        if (judge === '不正解') judge = '✕不正解';
+                        if (judge === '判別不能') judge = '△判別不能';
+
                         return {
-                            id: (item['案件ID'] || item['id'] || 'CASE-' + Date.now()).toString(),
-                            query: item['問い合わせ内容'] || item['query'] || '',
-                            answer: item['回答内容'] || item['answer'] || '',
+                            id: (item['案件ID'] || item['id'] || 'CASE-' + Date.now()).toString().trim(),
+                            query: (item['問い合わせ内容'] || item['query'] || '').trim(),
+                            answer: (item['回答内容'] || item['answer'] || '').trim(),
                             dept1: depts[0] || '',
                             dept2: depts[1] || '',
                             dept3: depts[2] || '',
-                            judge: item['正誤判定'] || item['judge'] || '△判別不能',
-                            errorType: item['エラー分類'] || item['errorType'] || 'なし',
-                            ideal: item['理想の回答'] || item['ideal'] || '',
-                            action: item['改善アクション'] || item['action'] || '',
-                            status: item['対応状況'] || item['status'] || '未着手'
+                            judge: judge,
+                            errorType: (item['エラー分類'] || item['errorType'] || 'なし').trim(),
+                            ideal: (item['理想の回答'] || item['ideal'] || '').trim(),
+                            action: (item['改善アクション'] || item['action'] || '').trim(),
+                            status: status
                         };
                     });
                     saveToLocal(); applyFilters(); showMessage("インポート完了");
@@ -434,9 +435,7 @@
             if (fullData.length === 0) return alert("データがありません");
             const exp = fullData.map(d => {
                 const combinedDept = [d.dept1, d.dept2, d.dept3].filter(Boolean).join('\n');
-                return {
-                    "案件ID": d.id, "問い合わせ内容": d.query, "回答内容": d.answer, "所管課": combinedDept, "正誤判定": d.judge, "エラー分類": d.errorType, "理想の回答": d.ideal, "改善アクション": d.action, "対応状況": d.status
-                };
+                return { "案件ID": d.id, "問い合わせ内容": d.query, "回答内容": d.answer, "所管課": combinedDept, "正誤判定": d.judge, "エラー分類": d.errorType, "理想の回答": d.ideal, "改善アクション": d.action, "対応状況": d.status };
             });
             const csv = Papa.unparse(exp);
             const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
@@ -460,9 +459,13 @@
             currentEditingId = id;
             document.getElementById('modalTitle').textContent = "査読・案件編集";
             document.getElementById('modalCaseIdDisplay').textContent = item.id;
+            
+            // 各フィールドへのデータセット。IDの整合性を確実に保つ。
             ['query', 'answer', 'dept1', 'dept2', 'dept3', 'judge', 'errorType', 'ideal', 'action', 'status'].forEach(k => {
-                document.getElementById(`edit-${k}`).value = item[k] || '';
+                const el = document.getElementById(`edit-${k}`);
+                if (el) el.value = item[k] || (el.tagName === 'SELECT' ? el.options[0].value : '');
             });
+            
             document.getElementById('reviewModal').classList.remove('hidden');
         };
 
@@ -495,11 +498,7 @@
             el.className = "fixed top-24 left-1/2 -translate-x-1/2 z-[300] min-w-[320px] px-8 py-5 rounded-3xl bg-slate-900 text-white shadow-2xl text-sm font-bold flex flex-col items-center gap-3 text-center transition-all";
             setTimeout(() => el.classList.add('hidden'), 3000);
         }
-        window.toggleSort = (key) => {
-            sortConfig.direction = (sortConfig.key === key && sortConfig.direction === 'asc') ? 'desc' : 'asc';
-            sortConfig.key = key;
-            applyFilters();
-        };
+        window.toggleSort = (key) => { sortConfig.direction = (sortConfig.key === key && sortConfig.direction === 'asc') ? 'desc' : 'asc'; sortConfig.key = key; applyFilters(); };
         window.clearStoredData = () => { if(confirm("全データを削除しますか？")){ localStorage.removeItem(STORAGE_KEY); fullData = []; applyFilters(); } };
         document.getElementById('searchInput').addEventListener('input', applyFilters);
         document.getElementById('filterJudge').addEventListener('change', applyFilters);
